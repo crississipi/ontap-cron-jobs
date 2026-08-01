@@ -17,7 +17,8 @@
 
 generator analyticsClient {
   provider = "prisma-client-js"
-  output   = "../node_modules/@prisma/analytics-client"
+  // Outside node_modules so Hostinger mid-build `npm install` cannot wipe it.
+  output   = "../generated/analytics-client"
 }
 
 datasource db {

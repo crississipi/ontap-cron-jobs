@@ -4,16 +4,16 @@ import type { Prisma as AnalyticsPrismaType } from "@prisma/client";
 const AnalyticsPrisma = (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("@prisma" + "/analytics-client").Prisma;
+    return require("../../generated/analytics-client").Prisma;
   } catch (err) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("@prisma" + "/client").Prisma;
+    return require("@prisma/client").Prisma;
   }
 })();
 const MainPrisma = (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("@prisma" + "/client").Prisma;
+    return require("@prisma/client").Prisma;
   } catch (err) {
     return undefined as unknown as typeof import("@prisma/client").Prisma;
   }

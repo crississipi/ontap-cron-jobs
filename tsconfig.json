@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@prisma/analytics-client": ["./generated/analytics-client"]
     }
   },
   "include": [

@@ -1,9 +1,9 @@
 // ──────────────────────────────────────────────────────────────
 // Analytics Prisma Client Singleton (static import)
 // ──────────────────────────────────────────────────────────────
-// This file uses a plain, static import of the generated
-// `@prisma/analytics-client`. Ensure the client is generated before starting the dev server.
-import { PrismaClient as PrismaAnalyticsClientCtor } from "@prisma/analytics-client";
+// Generated to ./generated/analytics-client (not node_modules) so Hostinger
+// production npm installs cannot delete the client mid-build.
+import { PrismaClient as PrismaAnalyticsClientCtor } from "@/generated/analytics-client";
 
 const globalForAnalytics = globalThis as unknown as {
   prismaAnalytics?: any;
@@ -37,7 +37,6 @@ function buildAnalyticsUrl(): string {
   });
 
   return additions.length > 0 ? `${base}${separator}${additions.join("&")}` : base;
-  
 }
 
 export const prismaAnalytics =
