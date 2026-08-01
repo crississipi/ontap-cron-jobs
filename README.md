@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OnTap Cron Jobs
 
-## Getting Started
+Dedicated Next.js worker that hosts OnTap scheduled jobs under `/api/cron/*`.
 
-First, run the development server:
+This service connects to the **same** MySQL databases as `ontapnewsystem` and only exposes cron endpoints protected by `CRON_SECRET`. The original cron routes in `ontapnewsystem` are left untouched (duplicate copies).
+
+## Security
+
+- Every `/api/cron/*` route requires `Authorization: Bearer <CRON_SECRET>` (or `x-cron-secret`).
+- If `CRON_SECRET` is missing, routes return `503` (`CRON_SECRET_MISSING`) — no open endpoints.
+- Optional `CRON_ALLOWED_USER_AGENTS` further restricts callers (e.g. `cron-job.org`).
+- Middleware returns `404` for any non-cron `/api/*` path.
+- No login, admin UI, or public database APIs are exposed.
+
+## Setup
 
 ```bash
+cp .env.example .env.local
+# fill in NEWDATABASE_URL, NEWANALYTICS_DATABASE_URL, CRON_SECRET, SMTP_*, FRONTEND_URL, etc.
+
+npm install
+npm run db:generate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Production:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Calling a job
 
-## Learn More
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://YOUR_CRON_DOMAIN/api/cron/process-email-queue"
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Endpoints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Method | Path |
+|--------|------|
+| GET | `/api/cron/process-email-queue` |
+| GET | `/api/cron/retry-failed-emails` |
+| GET | `/api/cron/reset-email-counts` |
+| GET | `/api/cron/send-daily-digests` |
+| GET | `/api/cron/send-weekly-digests` |
+| GET | `/api/cron/send-scheduled-newsletters` |
+| GET | `/api/cron/subscription-expiry` |
+| GET | `/api/cron/order-feedback-requests` |
+| GET | `/api/cron/superadmin-user-report` |
+| GET | `/api/cron/superadmin-inactive-users` |
+| GET | `/api/cron/process-qr-queue` |
+| GET | `/api/cron/init-subscription-system` |
+| GET | `/api/cron/cleanup-webhook-events` |
+| GET | `/api/cron/cleanup-checkout-sessions` |
+| GET | `/api/cron/cleanup-notifications` |
+| GET | `/api/cron/cleanup` |
+| GET | `/api/cron/company-daily-summary` |
+| GET | `/api/cron/company-weekly-summary` |
+| GET | `/api/cron/company-top-performer-alert` |
+| POST | `/api/cron/abandoned-cart` |
+| POST | `/api/cron/promos/update-status` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Hostinger notes
 
-## Deploy on Vercel
+- Deploy as a separate Node.js app (same Hostinger plan / VPS as needed).
+- Point external schedulers at this domain’s `/api/cron/*` URLs.
+- Use small Prisma `connection_limit` values already baked into the DB clients (Hostinger-friendly).
+- Do **not** run Prisma migrations from this app; it only generates clients against existing schemas.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Env
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [`.env.example`](.env.example) for required keys. Never commit real secrets.

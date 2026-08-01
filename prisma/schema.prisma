@@ -1,0 +1,2821 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("NEWDATABASE_URL")
+}
+
+model Company {
+  company_id                 BigInt                      @id @default(autoincrement())
+  name                       String                      @db.VarChar(255)
+  security_key               String                      @db.VarChar(255)
+  admin_id                   BigInt?
+  company_slug               String?                     @unique @db.VarChar(255)
+  security_code              String?                     @db.VarChar(8)
+  approval_required          Boolean                     @default(true)
+  is_public                  Boolean                     @default(false)
+  company_theme              String?                     @default("default") @db.VarChar(100)
+  settings                   String?                     @db.LongText
+  status                     String                      @default("pending") @db.VarChar(20)
+  subscription_tier          String?                     @db.VarChar(20)
+  max_employees              Int?
+  current_employees          Int                         @default(0)
+  created_by                 BigInt?
+  approved_at                DateTime?
+  approved_by                BigInt?
+  last_name_change_request   DateTime?
+  pending_name_change        String?                     @db.VarChar(255)
+  rejection_reason           String?                     @db.Text
+  created_at                 DateTime                    @default(now())
+  updated_at                 DateTime?
+  description                String?                     @db.Text
+  email                      String?                     @unique
+  logo_url                   String?                     @db.VarChar(512)
+  bizcards                   Bizcard[]
+  admin                      User?                       @relation("CompanyAdmin", fields: [admin_id], references: [user_id])
+  approvedByUser             User?                       @relation("CompanyApprovedBy", fields: [approved_by], references: [user_id])
+  createdByUser              User?                       @relation("CompanyCreatedBy", fields: [created_by], references: [user_id])
+  companyAuditLogs           CompanyAuditLog[]
+  companyEmployees           CompanyEmployee[]
+  companyEmployeeInvitations CompanyEmployeeInvitation[]
+  companyJoinRequests        CompanyJoinRequest[]
+  companyNameChangeRequests  CompanyNameChangeRequest[]
+  employeeCards              EmployeeCard[]
+  groups                     Group[]
+  staffClientAssignments     StaffClientAssignment[]
+  users                      User[]                      @relation("CompanyMembers")
+  User_new                   User_new[]
+
+  @@index([status])
+  @@index([subscription_tier])
+  @@index([created_by])
+  @@index([approved_by])
+  @@index([admin_id], map: "Company_admin_id_fkey")
+}
+
+model Group {
+  group_id   BigInt    @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  company_id BigInt
+  user_id    BigInt?
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  company    Company   @relation(fields: [company_id], references: [company_id])
+  user       User?     @relation(fields: [user_id], references: [user_id])
+
+  @@index([company_id], map: "Group_company_id_fkey")
+  @@index([user_id], map: "Group_user_id_fkey")
+}
+
+model User {
+  user_id                            BigInt                            @id @default(autoincrement())
+  serial_id                          String?                           @unique @db.VarChar(100)
+  custom_uri                         String?                           @unique
+  role                               String                            @db.VarChar(50)
+  staff_designation                  String?                           @db.VarChar(100)
+  first_name                         String                            @db.VarChar(100)
+  last_name                          String                            @db.VarChar(100)
+  middle_name                        String?                           @db.VarChar(100)
+  email                              String                            @unique
+  contact                            String?                           @db.VarChar(20)
+  alt_contact                        String?                           @db.VarChar(20)
+  alt_email                          String?
+  about                              String?                           @db.Text
+  job_position                       String?                           @db.VarChar(100)
+  affiliate_code                     String?                           @db.VarChar(50)
+  is_affiliate                       Boolean                           @default(false)
+  commission_rate                    Decimal                           @default(10.00) @db.Decimal(5, 2)
+  affiliate_joined_at                DateTime?
+  is_affiliate_restricted            Boolean                           @default(false)
+  affiliate_restricted_until         DateTime?
+  affiliate_restriction_reason       String?                           @db.Text
+  affiliate_restricted_by            BigInt?
+  affiliate_restricted_at            DateTime?
+  total_affiliate_earnings           Decimal                           @default(0.00) @db.Decimal(12, 2)
+  total_successful_referrals         Int                               @default(0)
+  prof_title                         String?                           @db.VarChar(20)
+  post_nominal                       String?                           @db.VarChar(20)
+  suffix                             String?                           @db.VarChar(10)
+  profile_url                        String?                           @db.VarChar(512)
+  cover_url                          String?                           @db.VarChar(512)
+  location                           String?                           @db.VarChar(255)
+  two_factor_secret                  String?                           @db.LongText
+  two_factor_enabled                 Boolean                           @default(false)
+  auto_logout_minutes                Int                               @default(1440)
+  login_notifications                Boolean                           @default(true)
+  password_rotation_days             Int                               @default(30)
+  suspicious_ips                     String?                           @db.LongText
+  company_id                         BigInt?
+  group_id                           BigInt?
+  linked_account                     BigInt?
+  is_active                          Boolean                           @default(true)
+  is_restricted                      Boolean                           @default(false)
+  restricted_until                   DateTime?
+  restriction_reason                 String?                           @db.Text
+  restricted_by                      BigInt?
+  restricted_at                      DateTime?
+  is_online                          Boolean                           @default(false)
+  last_active                        DateTime?
+  deactivated_flag                   Boolean                           @default(false)
+  last_login_at                      DateTime?
+  last_login_ip                      String?                           @db.VarChar(45)
+  last_login_location                String?                           @db.VarChar(255)
+  last_login_latitude                Decimal?                          @db.Decimal(10, 8)
+  last_login_longitude               Decimal?                          @db.Decimal(11, 8)
+  last_login_country                 String?                           @db.VarChar(100)
+  last_login_city                    String?                           @db.VarChar(100)
+  registration_ip                    String?                           @db.VarChar(45)
+  registration_location              String?                           @db.VarChar(255)
+  registration_latitude              Decimal?                          @db.Decimal(10, 8)
+  registration_longitude             Decimal?                          @db.Decimal(11, 8)
+  registration_country               String?                           @db.VarChar(100)
+  registration_city                  String?                           @db.VarChar(100)
+  is_trial_used                      Boolean                           @default(false)
+  trial_start                        DateTime?
+  trial_end                          DateTime?
+  spin_balance                       Int                               @default(0)
+  total_spins_earned                 Int                               @default(0)
+  total_spins_used                   Int                               @default(0)
+  last_spin_at                       DateTime?
+  created_at                         DateTime                          @default(now())
+  updated_at                         DateTime?
+  registration_type                  String                            @default("individual") @db.VarChar(20)
+  can_create_company                 Boolean                           @default(false)
+  last_reverification_at             DateTime?
+  /// Soft-delete timestamp; set when Super Admin moves the user to Recycle Bin
+  deleted_at                         DateTime?
+  activityLogs                       ActivityLog[]
+  addresses                          Address[]
+  adminAuditLogs                     AdminAuditLog[]
+  affiliates                         Affiliate[]
+  affiliateAuditLogs                 AffiliateAuditLog[]               @relation("AffiliateAuditSubject")
+  performedAffiliateAuditLogs        AffiliateAuditLog[]               @relation("AffiliateAuditPerformer")
+  affiliateClicks                    AffiliateClick[]                  @relation("AffiliateClicksOwner")
+  affiliateConversions               AffiliateClick[]                  @relation("AffiliateClicksConversionUser")
+  affiliateLinks                     AffiliateLink[]                   @relation("AffiliateLinksOwner")
+  affiliatePerformanceMetrics        AffiliatePerformanceMetric[]      @relation("AffiliatePerformanceOwner")
+  affiliateSettings                  AffiliateSettings?
+  claimedBlankBizcards               Bizcard[]                         @relation("BizcardClaimedBy")
+  generatedBlankBizcards             Bizcard[]                         @relation("BizcardGeneratedBy")
+  bizcards                           Bizcard[]
+  bizcardMergeHistory                BizcardMergeHistory[]
+  blocksReceived                     BlockedUser[]                     @relation("BlockedTargetUser")
+  blocksInitiated                    BlockedUser[]                     @relation("BlockedByUser")
+  blogs                              Blog[]
+  carts                              Cart?
+  cartItems                          CartItem[]
+  clientAuditLogs                    ClientAuditLog[]                  @relation("ClientAuditClient")
+  performedClientAuditLogs           ClientAuditLog[]                  @relation("ClientAuditPerformer")
+  commissionsAsAffiliate             Commission[]                      @relation("CommissionsAffiliateUser")
+  commissionsAsReferred              Commission[]                      @relation("CommissionsReferredUser")
+  companiesManaged                   Company[]                         @relation("CompanyAdmin")
+  companiesApproved                  Company[]                         @relation("CompanyApprovedBy")
+  companiesCreated                   Company[]                         @relation("CompanyCreatedBy")
+  companyAuditLogs                   CompanyAuditLog[]
+  companyEmployeeRecords             CompanyEmployee[]
+  companyEmployeeInvitationsSent     CompanyEmployeeInvitation[]       @relation("CompanyEmployeeInvitationInviter")
+  companyEmployeeInvitationsReceived CompanyEmployeeInvitation[]       @relation("CompanyEmployeeInvitationUser")
+  companyJoinReviews                 CompanyJoinRequest[]              @relation("CompanyJoinRequestReviewer")
+  companyJoinRequests                CompanyJoinRequest[]              @relation("CompanyJoinRequestUser")
+  companyNameChangeRequests          CompanyNameChangeRequest[]        @relation("CompanyNameChangeRequester")
+  companyNameChangeReviews           CompanyNameChangeRequest[]        @relation("CompanyNameChangeReviewer")
+  receivedConnections                Connection[]                      @relation("ConnectionRecipient")
+  sentConnections                    Connection[]                      @relation("ConnectionRequester")
+  connectionTagsTarget               ConnectionTag[]                   @relation("ConnectionTagsTarget")
+  connectionTagsOwned                ConnectionTag[]                   @relation("ConnectionTagsOwner")
+  credentials                        Credential?
+  updatedDevFeatureFlags             DevFeatureFlag[]                  @relation("DevFeatureFlagUpdater")
+  ownedDevIncidents                  DevIncident[]                     @relation("DevIncidentOwner")
+  createdDevIntegrityCheckResults    DevIntegrityCheckResult[]         @relation("DevIntegrityCheckActor")
+  createdDevNotices                  DevNotice[]                       @relation("DevNoticeCreator")
+  updatedDevNotices                  DevNotice[]                       @relation("DevNoticeUpdater")
+  surveyResponses                    DevSurveyResponse[]
+  deviceUsagePrimary                 DeviceUsage?                      @relation("DeviceUsagePrimary")
+  emailOtps                          EmailOtp[]
+  emailVerificationTokens            EmailVerificationToken[]
+  employeeCard                       EmployeeCard?
+  managedGroups                      Group[]
+  inquiriesAssigned                  Inquiry[]                         @relation("InquiryAssignedStaff")
+  sentInquiries                      Inquiry[]                         @relation("InquirySender")
+  inquiries                          Inquiry[]                         @relation("InquiryOwner")
+  leads                              Lead[]
+  marketingEmailCampaigns            MarketingEmailCampaign[]          @relation("MarketingEmailCampaignCreatedBy")
+  media                              Media[]
+  notifications                      Notification?
+  notificationEmailQueue             NotificationEmailQueue[]
+  notificationEvents                 NotificationEvent[]
+  notificationPreference             NotificationPreference?
+  orderFeedbackEntries               OrderFeedback[]
+  performedOrderStatusAudits         OrderStatusAuditLog[]             @relation("OrderStatusAuditActor")
+  orderStatusCaches                  OrderStatusCache[]
+  passwordResetTokens                PasswordResetToken[]
+  payouts                            Payout[]
+  permissions                        Permission?
+  phoneVerificationTokens            PhoneVerificationToken[]
+  products                           Product[]
+  promoUsageEntries                  PromoUsage[]
+  createdPromotions                  Promotion[]                       @relation("PromotionCreatedBy")
+  purchaseLogs                       PurchaseLog[]
+  referralsAsAffiliate               Referral[]                        @relation("ReferralsAffiliateUser")
+  referredByAffiliates               Referral[]                        @relation("ReferralsReferredUser")
+  services                           Service[]
+  sessions                           Session[]
+  shopCommissionsAsAffiliate         ShopCommission[]                  @relation("ShopCommissionsAffiliateUser")
+  shopCommissionsAsReferred          ShopCommission[]                  @relation("ShopCommissionsReferredUser")
+  managedShopOrders                  ShopOrder[]                       @relation("ShopOrderStatusChangedBy")
+  shopOrders                         ShopOrder[]
+  socials                            Social[]
+  spinHistory                        SpinHistory[]
+  staffClientAssignmentsClient       StaffClientAssignment[]           @relation("StaffClientAssignmentsClient")
+  staffClientAssignmentsStaff        StaffClientAssignment[]           @relation("StaffClientAssignmentsStaff")
+  staffMarketingActivitiesClient     StaffMarketingActivity[]          @relation("StaffMarketingActivityClient")
+  staffMarketingActivitiesStaff      StaffMarketingActivity[]          @relation("StaffMarketingActivityStaff")
+  impersonationAuditLogsAsSuperadmin SuperadminImpersonationAuditLog[] @relation("ImpersonationAuditSuperadmin")
+  impersonationAuditLogsAsTarget     SuperadminImpersonationAuditLog[] @relation("ImpersonationAuditTarget")
+  impersonationTokensAsSuperadmin    SuperadminImpersonationToken[]    @relation("ImpersonationSuperadmin")
+  impersonationTokensAsTarget        SuperadminImpersonationToken[]    @relation("ImpersonationTarget")
+  templatePurchases                  TemplatePurchase[]
+  transactions                       Transaction[]
+  affiliateRestrictedBy              User?                             @relation("AffiliateRestrictions", fields: [affiliate_restricted_by], references: [user_id])
+  affiliateRestrictedUsers           User[]                            @relation("AffiliateRestrictions")
+  company                            Company?                          @relation("CompanyMembers", fields: [company_id], references: [company_id])
+  restrictedBy                       User?                             @relation("UserRestrictions", fields: [restricted_by], references: [user_id])
+  restrictedUsers                    User[]                            @relation("UserRestrictions")
+  userActivity                       UserActivity?
+  triggeredNotifications             UserNotification[]                @relation("UserNotificationsTrigger")
+  userNotifications                  UserNotification[]                @relation("UserNotificationsOwner")
+  profileAuditActions                UserProfileAudit[]                @relation("ProfileAuditActor")
+  profileAuditLogs                   UserProfileAudit[]                @relation("ProfileAuditSubject")
+  vcardSetup                         VCardSetup?
+  verificationCodes                  VerificationCode[]
+  webauthnCredentials                WebAuthnCredential[]
+  withdrawals                        Withdrawal[]                      @relation("WithdrawalsAffiliateUser")
+  activeSessionEntries               ActiveSession[]
+  checkoutSessions                   CheckoutSession[]
+  directConversationsAsHigh          DirectConversation[]              @relation("DirectConversationUserHigh")
+  directConversationsAsLow           DirectConversation[]              @relation("DirectConversationUserLow")
+  directMessageHides                 DirectMessageHide[]               @relation("DirectMessageHideUser")
+  directMessagesSent                 DirectMessage[]                   @relation("DirectMessageSender")
+  directReadStates                   DirectParticipantReadState[]      @relation("DirectReadStateUser")
+  loginHistoryEntries                LoginHistory[]
+  passwordHistoryEntries             PasswordHistory[]
+  paymentChannels                    PaymentChannel[]
+  performedStaffActivityLogs         StaffActivityLog[]                @relation("StaffActivityActor")
+  staffProfilesUpdated               StaffProfile[]                    @relation("StaffProfileUpdatedBy")
+  staffProfile                       StaffProfile?                     @relation("StaffProfileUser")
+  passwordViewGrantsAsSuperadmin     SuperadminPasswordViewGrant[]     @relation("PasswordViewGrantSuperadmin")
+  passwordViewGrantsAsTarget         SuperadminPasswordViewGrant[]     @relation("PasswordViewGrantTarget")
+  supportConversationsClaimed        SupportConversation[]             @relation("SupportConversationClaimedBy")
+  supportConversationsAsClient       SupportConversation?              @relation("SupportConversationClient")
+  supportConversationsEscalated      SupportConversation[]             @relation("SupportConversationEscalatedBy")
+  supportConversationsResolved       SupportConversation[]             @relation("SupportConversationResolvedBy")
+  supportConversationsAsStaff        SupportConversation[]             @relation("SupportConversationStaff")
+  supportMessagesSent                SupportMessage[]                  @relation("SupportMessageSender")
+  supportReadStates                  SupportParticipantReadState[]     @relation("SupportReadStateUser")
+  cookiePreferences                  UserCookiePreferences?
+
+  @@index([role])
+  @@index([is_active, is_restricted])
+  @@index([is_affiliate, is_affiliate_restricted])
+  @@index([is_online, last_active])
+  @@index([created_at])
+  @@index([restricted_by])
+  @@index([affiliate_joined_at])
+  @@index([affiliate_restricted_by])
+  @@index([total_affiliate_earnings])
+  @@index([registration_type])
+  @@index([company_id], map: "User_company_id_fkey")
+  @@index([staff_designation], map: "idx_users_staff_designation")
+  @@index([deleted_at])
+}
+
+model CompanyJoinRequest {
+  request_id       BigInt    @id @default(autoincrement())
+  company_id       BigInt
+  user_id          BigInt
+  status           String    @default("pending") @db.VarChar(20)
+  requested_at     DateTime  @default(now())
+  reviewed_at      DateTime?
+  reviewed_by      BigInt?
+  rejection_reason String?   @db.Text
+  company          Company   @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  reviewer         User?     @relation("CompanyJoinRequestReviewer", fields: [reviewed_by], references: [user_id])
+  user             User      @relation("CompanyJoinRequestUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([company_id, status])
+  @@index([user_id])
+  @@index([reviewed_by])
+}
+
+model CompanyEmployee {
+  employee_id       BigInt                    @id @default(autoincrement())
+  company_id        BigInt
+  user_id           BigInt
+  role              String                    @default("employee") @db.VarChar(20)
+  permissions       String?                   @db.LongText
+  joined_at         DateTime                  @default(now())
+  is_active         Boolean                   @default(true)
+  restricted_at     DateTime?
+  restricted_reason String?                   @db.Text
+  company           Company                   @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  user              User                      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  activitySummaries EmployeeActivitySummary[]
+
+  @@unique([company_id, user_id])
+  @@index([company_id])
+  @@index([user_id])
+  @@index([role])
+}
+
+model CompanyEmployeeInvitation {
+  invitation_id BigInt    @id @default(autoincrement())
+  company_id    BigInt
+  email         String    @db.VarChar(255)
+  user_id       BigInt?
+  role          String    @default("employee") @db.VarChar(20)
+  token_hash    String    @unique @db.VarChar(64)
+  status        String    @default("pending") @db.VarChar(20)
+  invited_by    BigInt
+  expires_at    DateTime
+  accepted_at   DateTime?
+  created_at    DateTime  @default(now())
+  company       Company   @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  inviter       User      @relation("CompanyEmployeeInvitationInviter", fields: [invited_by], references: [user_id], onDelete: Cascade)
+  user          User?     @relation("CompanyEmployeeInvitationUser", fields: [user_id], references: [user_id])
+
+  @@index([company_id, status])
+  @@index([email])
+  @@index([user_id])
+  @@index([invited_by])
+  @@index([expires_at])
+}
+
+model EmployeeActivitySummary {
+  summary_id        BigInt          @id @default(autoincrement())
+  employee_id       BigInt
+  period            String          @db.VarChar(20)
+  period_date       DateTime        @db.Date
+  profile_views     Int             @default(0)
+  contact_saves     Int             @default(0)
+  inquiries_count   Int             @default(0)
+  connections_count Int             @default(0)
+  rank_score        Decimal         @default(0.00) @db.Decimal(10, 2)
+  calculated_at     DateTime        @default(now())
+  employee          CompanyEmployee @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+
+  @@unique([employee_id, period, period_date])
+  @@index([period, period_date, rank_score])
+}
+
+model StaffRole {
+  role_id       BigInt         @id @default(autoincrement())
+  role_name     String         @unique(map: "uq_staff_roles_role_name") @db.VarChar(100)
+  role_key      String         @unique(map: "uq_staff_roles_role_key") @db.VarChar(50)
+  description   String?        @db.Text
+  created_at    DateTime       @default(now())
+  staffProfiles StaffProfile[]
+
+  @@map("staff_roles")
+}
+
+model Department {
+  department_id   BigInt         @id @default(autoincrement())
+  department_name String         @unique(map: "uq_departments_department_name") @db.VarChar(100)
+  department_key  String         @unique(map: "uq_departments_department_key") @db.VarChar(50)
+  created_at      DateTime       @default(now())
+  staffProfiles   StaffProfile[]
+
+  @@map("departments")
+}
+
+model StaffModule {
+  module_id     BigInt            @id @default(autoincrement())
+  module_name   String            @unique(map: "uq_modules_module_name") @db.VarChar(100)
+  module_key    String            @unique(map: "uq_modules_module_key") @db.VarChar(50)
+  description   String?           @db.Text
+  display_order Int               @default(0)
+  created_at    DateTime          @default(now())
+  permissions   StaffPermission[] @relation("StaffPermissionModule")
+
+  @@index([display_order], map: "idx_modules_display_order")
+  @@map("modules")
+}
+
+model StaffProfile {
+  staff_id      BigInt             @id @default(autoincrement())
+  user_id       BigInt             @unique(map: "uq_staff_profiles_user")
+  role_id       BigInt
+  department_id BigInt
+  is_active     Boolean            @default(true)
+  joined_at     DateTime           @default(now())
+  updated_by    BigInt?
+  updated_at    DateTime?
+  activityLogs  StaffActivityLog[]
+  permissions   StaffPermission[]
+  department    Department         @relation(fields: [department_id], references: [department_id])
+  role          StaffRole          @relation(fields: [role_id], references: [role_id])
+  updatedByUser User?              @relation("StaffProfileUpdatedBy", fields: [updated_by], references: [user_id])
+  user          User               @relation("StaffProfileUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([role_id], map: "idx_staff_profiles_role")
+  @@index([department_id], map: "idx_staff_profiles_department")
+  @@index([is_active], map: "idx_staff_profiles_active")
+  @@index([joined_at], map: "idx_staff_profiles_joined_at")
+  @@index([updated_by], map: "idx_staff_profiles_updated_by")
+  @@map("staff_profiles")
+}
+
+model StaffClientAssignment {
+  assignment_id  BigInt    @id @default(autoincrement())
+  staff_id       BigInt
+  client_user_id BigInt
+  company_id     BigInt?
+  assigned_at    DateTime  @default(now())
+  is_primary     Boolean   @default(false)
+  is_active      Boolean   @default(true)
+  notes          String?   @db.Text
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+  client         User      @relation("StaffClientAssignmentsClient", fields: [client_user_id], references: [user_id], onDelete: Cascade)
+  company        Company?  @relation(fields: [company_id], references: [company_id])
+  staff          User      @relation("StaffClientAssignmentsStaff", fields: [staff_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([staff_id, client_user_id], map: "uq_staff_client_assignments")
+  @@index([staff_id], map: "idx_staff_client_assignments_staff")
+  @@index([client_user_id], map: "idx_staff_client_assignments_client")
+  @@index([company_id], map: "idx_staff_client_assignments_company")
+}
+
+model StaffMarketingActivity {
+  activity_id BigInt   @id @default(autoincrement())
+  staff_id    BigInt
+  client_id   BigInt?
+  action_type String   @db.VarChar(50)
+  description String?  @db.Text
+  metadata    String?  @db.LongText
+  ip_address  String?  @db.VarChar(45)
+  created_at  DateTime @default(now())
+  client      User?    @relation("StaffMarketingActivityClient", fields: [client_id], references: [user_id])
+  staff       User     @relation("StaffMarketingActivityStaff", fields: [staff_id], references: [user_id], onDelete: Cascade)
+
+  @@index([staff_id], map: "idx_staff_marketing_activity_staff")
+  @@index([action_type], map: "idx_staff_marketing_activity_action")
+  @@index([created_at], map: "idx_staff_marketing_activity_created_at")
+  @@index([client_id], map: "StaffMarketingActivity_client_id_fkey")
+}
+
+model StaffPermission {
+  permission_id BigInt       @id @default(autoincrement())
+  staff_id      BigInt
+  module        String       @db.VarChar(50)
+  can_create    Boolean      @default(false)
+  can_read      Boolean      @default(false)
+  can_update    Boolean      @default(false)
+  can_delete    Boolean      @default(false)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime?
+  moduleRef     StaffModule  @relation("StaffPermissionModule", fields: [module], references: [module_key])
+  staff         StaffProfile @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+
+  @@unique([staff_id, module], map: "uq_staff_permissions_staff_module")
+  @@index([staff_id], map: "idx_staff_permissions_staff")
+  @@index([module], map: "idx_staff_permissions_module")
+  @@map("staff_permissions")
+}
+
+model StaffActivityLog {
+  log_id     BigInt       @id @default(autoincrement())
+  staff_id   BigInt
+  user_id    BigInt
+  action     String       @db.VarChar(100)
+  details    String?      @db.LongText
+  ip_address String?      @db.VarChar(45)
+  user_agent String?      @db.Text
+  request_id String?      @db.VarChar(100)
+  created_at DateTime     @default(now())
+  staff      StaffProfile @relation(fields: [staff_id], references: [staff_id], onDelete: Cascade)
+  actor      User         @relation("StaffActivityActor", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([staff_id, created_at], map: "idx_staff_activity_staff_created")
+  @@index([action], map: "idx_staff_activity_action")
+  @@index([user_id], map: "idx_staff_activity_user")
+  @@index([request_id], map: "idx_staff_activity_request_id")
+  @@map("staff_activity_logs")
+}
+
+model CompanyNameChangeRequest {
+  request_id       BigInt    @id @default(autoincrement())
+  company_id       BigInt
+  requested_name   String    @db.VarChar(255)
+  requested_by     BigInt
+  status           String    @default("pending") @db.VarChar(20)
+  requested_at     DateTime  @default(now())
+  reviewed_at      DateTime?
+  reviewed_by      BigInt?
+  rejection_reason String?   @db.Text
+  company          Company   @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  requester        User      @relation("CompanyNameChangeRequester", fields: [requested_by], references: [user_id])
+  reviewer         User?     @relation("CompanyNameChangeReviewer", fields: [reviewed_by], references: [user_id])
+
+  @@index([company_id, status])
+  @@index([requested_by])
+  @@index([reviewed_by])
+}
+
+model CompanyAuditLog {
+  log_id     BigInt   @id @default(autoincrement())
+  company_id BigInt
+  user_id    BigInt
+  action     String   @db.VarChar(100)
+  details    String?  @db.LongText
+  ip_address String?  @db.VarChar(45)
+  user_agent String?  @db.Text
+  request_id String?  @db.VarChar(100)
+  created_at DateTime @default(now())
+  company    Company  @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([company_id, created_at])
+  @@index([user_id])
+  @@index([action])
+}
+
+model ClientAuditLog {
+  log_id         BigInt   @id @default(autoincrement())
+  client_user_id BigInt
+  action         String   @db.VarChar(100)
+  performed_by   BigInt
+  old_values     String?  @db.LongText
+  new_values     String?  @db.LongText
+  ip_address     String?  @db.VarChar(45)
+  user_agent     String?  @db.Text
+  request_id     String?  @db.VarChar(100)
+  created_at     DateTime @default(now())
+  client         User     @relation("ClientAuditClient", fields: [client_user_id], references: [user_id], onDelete: Cascade)
+  performer      User     @relation("ClientAuditPerformer", fields: [performed_by], references: [user_id], onDelete: Cascade)
+
+  @@index([client_user_id])
+  @@index([action])
+  @@index([performed_by])
+  @@index([created_at])
+}
+
+model Credential {
+  credentials_id       BigInt    @id @default(autoincrement())
+  user_id              BigInt    @unique
+  password_hash        String    @db.VarChar(255)
+  email_verified_at    DateTime?
+  remember_token       String?   @db.VarChar(100)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime?
+  email_verified       Boolean   @default(false)
+  password_changed_at  DateTime?
+  must_change_password Boolean   @default(false)
+  /// AES-256-GCM compact ciphertext for authorized superadmin recovery viewing only.
+  password_encrypted   String?   @db.LongText
+  user                 User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Bizcard {
+  bizcard_id                BigInt                   @id @default(autoincrement())
+  user_id                   BigInt?
+  bizcard_name              String                   @db.VarChar(255)
+  serial_id                 String?                  @unique @db.VarChar(100)
+  url_alias                 String?                  @unique @db.VarChar(100)
+  description               String?                  @db.Text
+  first_name                String                   @db.VarChar(100)
+  middle_name               String?                  @db.VarChar(100)
+  last_name                 String                   @db.VarChar(100)
+  occupation                String?                  @db.VarChar(200)
+  professional_title        String?                  @db.VarChar(200)
+  post_nominal              String?                  @db.VarChar(50)
+  suffix                    String?                  @db.VarChar(50)
+  area                      String?                  @db.VarChar(100)
+  baranggay                 String?                  @db.VarChar(100)
+  city                      String                   @default("") @db.VarChar(100)
+  zip_code                  BigInt?
+  region                    String?                  @db.VarChar(100)
+  address_link              String?                  @db.Text
+  company_id                BigInt?
+  bio                       String?                  @db.LongText
+  email                     String                   @db.VarChar(255)
+  contact_number            String                   @db.VarChar(50)
+  alt_email                 String?                  @db.VarChar(255)
+  alt_contact_number        String?                  @db.VarChar(50)
+  languages                 String?                  @db.Text
+  profile_img               String?                  @db.VarChar(500)
+  cover_img                 String?                  @db.VarChar(500)
+  cover_img_position        String?                  @db.VarChar(50)
+  bizcard_theme             String?                  @db.VarChar(100)
+  bizcard_type              BizcardType              @default(virtual)
+  linked_account            BigInt?
+  is_merged                 Boolean                  @default(false)
+  deactivated_flag          Boolean                  @default(false)
+  merged_at                 DateTime?
+  qr_code_url               String?                  @db.VarChar(1024)
+  qr_code_generated_at      DateTime?
+  qr_code_last_accessed     DateTime?
+  scan_count                Int                      @default(0)
+  portfolio_url             String?                  @db.VarChar(512)
+  is_blank                  Boolean                  @default(false)
+  claimed_at                DateTime?
+  claimed_by_user_id        BigInt?
+  generated_by_user_id      BigInt?
+  generated_at              DateTime                 @default(now())
+  created_at                DateTime                 @default(now())
+  updated_at                DateTime?
+  /// Timestamp of last URL alias change (tracked separately from all updates)
+  last_url_alias_changed_at DateTime?
+  /// Subscription tier: basic, standard, premium
+  subscription_tier         String?                  @db.VarChar(20)
+  bizcard_style             String                   @default("polyvinyl") @db.VarChar(20)
+  subscription_started_at   DateTime?
+  subscription_expires_at   DateTime?
+  /// pending_activation, active, expired, cancelled
+  subscription_status       String?                  @default("pending_activation") @db.VarChar(20)
+  /// Link to Merchandise for product-tied subscription
+  product_id                BigInt?
+  auto_renewal_enabled      Boolean                  @default(false)
+  last_renewal_at           DateTime?
+  portfolio_qr_code_url     String?                  @db.VarChar(1024)
+  vcf_file_url              String?                  @db.VarChar(1024)
+  /// When a SuperAdmin manually marks this blank card as physically distributed (before user registration)
+  manually_distributed_at   DateTime?
+  /// Which SuperAdmin user performed the manual distribution action
+  manually_distributed_by   BigInt?
+  show_cover_photo          Boolean                  @default(true)
+  show_inquiry_card         Boolean                  @default(true)
+  /// Soft-delete timestamp; set when Super Admin moves the owning user to Recycle Bin
+  deleted_at                DateTime?
+  /// Label shown next to contact/social icons on the public portfolio: "platform" or "link"
+  contact_link_label        String                   @default("link") @db.VarChar(16)
+  addresses                 Address[]
+  claimedByUser             User?                    @relation("BizcardClaimedBy", fields: [claimed_by_user_id], references: [user_id])
+  company                   Company?                 @relation(fields: [company_id], references: [company_id])
+  generatedByUser           User?                    @relation("BizcardGeneratedBy", fields: [generated_by_user_id], references: [user_id])
+  linkedBizcard             Bizcard?                 @relation("BizcardLinkedAccount", fields: [linked_account], references: [bizcard_id])
+  mergedBizcards            Bizcard[]                @relation("BizcardLinkedAccount")
+  user                      User?                    @relation(fields: [user_id], references: [user_id])
+  mergeHistoryAsBlank       BizcardMergeHistory[]    @relation("BlankBizcard")
+  mergeHistoryAsVirtual     BizcardMergeHistory[]    @relation("VirtualBizcard")
+  marketplaceSubscription   BizcardSubscription?
+  blogs                     Blog[]
+  connections               Connection[]
+  inquiries                 Inquiry[]
+  products                  Product[]
+  services                  Service[]
+  socials                   Social[]
+  subscriptionUpgradeLogs   SubscriptionUpgradeLog[] @relation("BizcardUpgradeLogs")
+  qrCodeScans               QRCodeScan[]
+
+  @@index([user_id])
+  @@index([url_alias])
+  @@index([serial_id])
+  @@index([email])
+  @@index([company_id])
+  @@index([bizcard_type])
+  @@index([deactivated_flag])
+  @@index([is_merged])
+  @@index([is_blank])
+  @@index([claimed_at])
+  @@index([generated_at])
+  @@index([subscription_tier])
+  @@index([subscription_status])
+  @@index([subscription_expires_at])
+  @@index([product_id])
+  @@index([linked_account], map: "Bizcard_linked_account_fkey")
+  @@index([claimed_by_user_id], map: "Bizcard_claimed_by_user_id_fkey")
+  @@index([generated_by_user_id], map: "Bizcard_generated_by_user_id_fkey")
+  @@index([qr_code_url(length: 768)])
+  @@index([qr_code_generated_at])
+  @@index([qr_code_last_accessed])
+  @@index([scan_count])
+  @@index([deleted_at])
+  @@fulltext([bizcard_name, first_name, last_name, description, bio])
+  @@map("Bizcard")
+}
+
+model Theme {
+  id                BigInt             @id @default(autoincrement())
+  theme_name        String             @unique @db.VarChar(100)
+  theme_path        String             @unique
+  created_at        DateTime           @default(now())
+  css_variables     String?            @db.LongText
+  exclusive_for     String?
+  is_active         Boolean            @default(true)
+  preview_image     String?            @db.VarChar(512)
+  updated_at        DateTime?
+  category          String?            @db.VarChar(100)
+  download_count    Int                @default(0)
+  preview_images    String?            @db.LongText
+  price             Decimal            @default(0.00) @db.Decimal(10, 2)
+  tag               String             @default("free") @db.VarChar(10)
+  templatePurchases TemplatePurchase[]
+
+  @@index([exclusive_for])
+  @@index([is_active])
+  @@index([tag])
+  @@index([price])
+  @@index([category])
+}
+
+model Address {
+  address_id BigInt    @id @default(autoincrement())
+  user_id    BigInt
+  bizcard_id BigInt?
+  area       String?   @db.VarChar(255)
+  brgy       String?   @db.VarChar(255)
+  city       String?   @db.VarChar(255)
+  region     String?   @db.VarChar(255)
+  zipcode    String?   @db.VarChar(20)
+  plus_code  String?   @db.VarChar(255)
+  latitude   Decimal?  @db.Decimal(10, 8)
+  longitude  Decimal?  @db.Decimal(11, 8)
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  map_link   String?   @db.VarChar(512)
+  bizcard    Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  user       User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Address_user_id_fkey")
+  @@index([bizcard_id])
+  @@index([bizcard_id], map: "idx_address_bizcard")
+}
+
+model Social {
+  socials_id    BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  bizcard_id    BigInt?
+  platform      String    @db.VarChar(50)
+  url           String    @db.VarChar(512)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime?
+  display_order Int       @default(0)
+  is_visible    Boolean   @default(true)
+  /// Soft-delete timestamp; set when a social link is removed in the bizcard editor
+  deleted_at    DateTime?
+  bizcard       Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, platform])
+  @@index([user_id, display_order])
+  @@index([bizcard_id, display_order])
+  @@index([bizcard_id], map: "idx_social_bizcard")
+  @@index([deleted_at])
+}
+
+model Product {
+  product_id    BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  bizcard_id    BigInt?
+  name          String    @db.VarChar(255)
+  description   String?   @db.Text
+  price         Decimal   @db.Decimal(12, 2)
+  currency_code String    @db.VarChar(10)
+  product_url   String?   @db.VarChar(255)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime?
+  bizcard       Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Product_user_id_fkey")
+  @@index([bizcard_id])
+  @@index([bizcard_id], map: "idx_product_bizcard")
+}
+
+model Service {
+  service_id          BigInt         @id @default(autoincrement())
+  user_id             BigInt
+  bizcard_id          BigInt?
+  name                String         @db.VarChar(255)
+  description         String         @db.Text
+  tagline             String?        @db.VarChar(255)
+  featured_image      String?        @db.VarChar(512)
+  service_url         String?        @db.VarChar(512)
+  created_at          DateTime       @default(now())
+  updated_at          DateTime?
+  display_order       Int            @default(0)
+  is_visible          Boolean        @default(true)
+  currency_code       String?        @db.VarChar(10)
+  featured            Boolean        @default(false)
+  is_price_negotiable Boolean        @default(false)
+  price               Decimal?       @db.Decimal(12, 2)
+  status              String         @default("active") @db.VarChar(20)
+  bizcard             Bizcard?       @relation(fields: [bizcard_id], references: [bizcard_id])
+  user                User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  serviceMedia        ServiceMedia[]
+
+  @@index([user_id, display_order])
+  @@index([user_id, status, created_at])
+  @@index([user_id, name])
+  @@index([bizcard_id, display_order])
+  @@index([bizcard_id], map: "idx_service_bizcard")
+}
+
+model ServiceMedia {
+  id               BigInt    @id @default(autoincrement())
+  service_id       BigInt
+  user_id          BigInt
+  file_name        String    @db.VarChar(255)
+  file_url         String    @db.VarChar(512)
+  mime_type        String    @db.VarChar(100)
+  size             BigInt?
+  storage_provider String    @default("cloudinary") @db.VarChar(50)
+  display_order    Int       @default(0)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime?
+  service          Service   @relation(fields: [service_id], references: [service_id], onDelete: Cascade)
+
+  @@index([service_id, display_order])
+  @@index([user_id])
+}
+
+model Blog {
+  blog_id    BigInt    @id @default(autoincrement())
+  user_id    BigInt
+  bizcard_id BigInt?
+  title      String    @db.VarChar(255)
+  content    String    @db.Text
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  bizcard    Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  user       User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Blog_user_id_fkey")
+  @@index([bizcard_id])
+  @@index([bizcard_id], map: "idx_blog_bizcard")
+}
+
+model Media {
+  media_id             BigInt            @id @default(autoincrement())
+  user_id              BigInt
+  related_type         String?           @db.VarChar(50)
+  related_id           BigInt?
+  file_name            String            @db.VarChar(255)
+  file_url             String            @db.VarChar(512)
+  mime_type            String?           @db.VarChar(100)
+  size                 BigInt?
+  metadata             String?           @db.LongText
+  created_at           DateTime          @default(now())
+  updated_at           DateTime?
+  storage_provider     String            @default("cloudinary") @db.VarChar(50)
+  media_type           Media_media_type? @default(image)
+  display_order        Int?              @default(0)
+  is_featured          Boolean?          @default(false)
+  is_active            Boolean?          @default(true)
+  deleted_at           DateTime?         @db.DateTime(0)
+  uploaded_by          String?
+  original_filename    String?           @db.VarChar(255)
+  file_size            BigInt?
+  width                Int?
+  height               Int?
+  cloudinary_public_id String?           @db.VarChar(255)
+  title                String?           @db.VarChar(255)
+  description          String?           @db.Text
+  user                 User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Media_user_id_fkey")
+  @@index([user_id, related_type, related_id, created_at])
+}
+
+model Inquiry {
+  inquiry_id           BigInt    @id @default(autoincrement())
+  user_id              BigInt
+  bizcard_id           BigInt?
+  visitor_name         String?   @db.VarChar(255)
+  visitor_email        String?
+  visitor_phone        String?   @db.VarChar(50)
+  message              String    @db.Text
+  read_flag            Boolean   @default(false)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime?
+  sender_user_id       BigInt?
+  assigned_to_staff_id BigInt?
+  status               String    @default("new") @db.VarChar(20)
+  subject              String?   @db.VarChar(255)
+  assignedToStaff      User?     @relation("InquiryAssignedStaff", fields: [assigned_to_staff_id], references: [user_id])
+  bizcard              Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  sender               User?     @relation("InquirySender", fields: [sender_user_id], references: [user_id])
+  owner                User      @relation("InquiryOwner", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, status])
+  @@index([user_id, created_at])
+  @@index([user_id, created_at, status])
+  @@index([bizcard_id])
+  @@index([sender_user_id])
+  @@index([assigned_to_staff_id], map: "idx_inquiry_assigned_to_staff")
+}
+
+model SupportConversation {
+  conversation_id       BigInt                        @id @default(autoincrement())
+  client_user_id        BigInt                        @unique
+  staff_id              BigInt?
+  claimed_at            DateTime?
+  claimed_by_staff_id   BigInt?
+  status                String                        @default("open") @db.VarChar(30)
+  escalation_level      String                        @default("none") @db.VarChar(20)
+  escalated_at          DateTime?
+  escalated_by_staff_id BigInt?
+  resolved_at           DateTime?
+  resolved_by_user_id   BigInt?
+  resolution_note       String?                       @db.Text
+  last_message_at       DateTime?
+  last_message_preview  String?                       @db.VarChar(500)
+  created_at            DateTime                      @default(now())
+  updated_at            DateTime                      @updatedAt
+  claimedByStaff        User?                         @relation("SupportConversationClaimedBy", fields: [claimed_by_staff_id], references: [user_id])
+  client                User                          @relation("SupportConversationClient", fields: [client_user_id], references: [user_id], onDelete: Cascade)
+  escalatedByStaff      User?                         @relation("SupportConversationEscalatedBy", fields: [escalated_by_staff_id], references: [user_id])
+  resolvedBy            User?                         @relation("SupportConversationResolvedBy", fields: [resolved_by_user_id], references: [user_id])
+  staff                 User?                         @relation("SupportConversationStaff", fields: [staff_id], references: [user_id])
+  messages              SupportMessage[]
+  readStates            SupportParticipantReadState[]
+
+  @@index([staff_id])
+  @@index([status])
+  @@index([escalation_level])
+  @@index([last_message_at])
+  @@index([claimed_by_staff_id], map: "support_conversations_claimed_by_staff_id_fkey")
+  @@index([escalated_by_staff_id], map: "support_conversations_escalated_by_staff_id_fkey")
+  @@index([resolved_by_user_id], map: "support_conversations_resolved_by_user_id_fkey")
+  @@map("support_conversations")
+}
+
+model SupportMessage {
+  message_id        BigInt                     @id @default(autoincrement())
+  conversation_id   BigInt
+  sender_user_id    BigInt
+  sender_role       String                     @db.VarChar(20)
+  body              String?                    @db.Text
+  message_type      String                     @default("text") @db.VarChar(30)
+  escalation_target String?                    @db.VarChar(20)
+  created_at        DateTime                   @default(now())
+  attachments       SupportMessageAttachment[]
+  conversation      SupportConversation        @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  sender            User                       @relation("SupportMessageSender", fields: [sender_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([conversation_id, created_at])
+  @@index([sender_user_id], map: "support_messages_sender_user_id_fkey")
+  @@map("support_messages")
+}
+
+model SupportMessageAttachment {
+  attachment_id BigInt         @id @default(autoincrement())
+  message_id    BigInt
+  media_url     String         @db.VarChar(512)
+  mime_type     String         @db.VarChar(100)
+  media_kind    String         @db.VarChar(10)
+  file_name     String?        @db.VarChar(255)
+  file_size     BigInt?
+  created_at    DateTime       @default(now())
+  message       SupportMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  @@index([message_id])
+  @@map("support_message_attachments")
+}
+
+model SupportParticipantReadState {
+  read_state_id        BigInt              @id @default(autoincrement())
+  conversation_id      BigInt
+  user_id              BigInt
+  last_read_at         DateTime            @default(now())
+  last_read_message_id BigInt?
+  conversation         SupportConversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  user                 User                @relation("SupportReadStateUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([conversation_id, user_id])
+  @@index([user_id])
+  @@map("support_participant_read_states")
+}
+
+model DirectConversation {
+  conversation_id      BigInt                       @id @default(autoincrement())
+  user_low_id          BigInt
+  user_high_id         BigInt
+  last_message_at      DateTime?
+  last_message_preview String?                      @db.VarChar(500)
+  created_at           DateTime                     @default(now())
+  updated_at           DateTime                     @updatedAt
+  userHigh             User                         @relation("DirectConversationUserHigh", fields: [user_high_id], references: [user_id], onDelete: Cascade)
+  userLow              User                         @relation("DirectConversationUserLow", fields: [user_low_id], references: [user_id], onDelete: Cascade)
+  messages             DirectMessage[]
+  readStates           DirectParticipantReadState[]
+
+  @@unique([user_low_id, user_high_id])
+  @@index([user_low_id, last_message_at])
+  @@index([user_high_id, last_message_at])
+  @@index([last_message_at])
+  @@map("direct_conversations")
+}
+
+model DirectMessage {
+  message_id      BigInt                    @id @default(autoincrement())
+  conversation_id BigInt
+  sender_user_id  BigInt
+  body            String?                   @db.Text
+  message_type    String                    @default("text") @db.VarChar(30)
+  created_at      DateTime                  @default(now())
+  unsent_at       DateTime?
+  attachments     DirectMessageAttachment[]
+  hides           DirectMessageHide[]
+  conversation    DirectConversation        @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  sender          User                      @relation("DirectMessageSender", fields: [sender_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([conversation_id, created_at])
+  @@index([sender_user_id])
+  @@map("direct_messages")
+}
+
+model DirectMessageAttachment {
+  attachment_id BigInt        @id @default(autoincrement())
+  message_id    BigInt
+  media_url     String        @db.VarChar(512)
+  mime_type     String        @db.VarChar(100)
+  media_kind    String        @db.VarChar(10)
+  file_name     String?       @db.VarChar(255)
+  file_size     BigInt?
+  created_at    DateTime      @default(now())
+  message       DirectMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  @@index([message_id])
+  @@map("direct_message_attachments")
+}
+
+model DirectMessageHide {
+  hide_id    BigInt        @id @default(autoincrement())
+  message_id BigInt
+  user_id    BigInt
+  created_at DateTime      @default(now())
+  message    DirectMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+  user       User          @relation("DirectMessageHideUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([message_id, user_id])
+  @@index([user_id])
+  @@map("direct_message_hides")
+}
+
+model DirectParticipantReadState {
+  read_state_id        BigInt             @id @default(autoincrement())
+  conversation_id      BigInt
+  user_id              BigInt
+  last_read_at         DateTime           @default(now())
+  last_read_message_id BigInt?
+  conversation         DirectConversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  user                 User               @relation("DirectReadStateUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([conversation_id, user_id])
+  @@index([user_id])
+  @@map("direct_participant_read_states")
+}
+
+model ActivityLog {
+  id            BigInt   @id @default(autoincrement())
+  user_id       BigInt
+  activity_type String   @db.VarChar(50)
+  reference_id  BigInt?
+  meta          String?  @db.LongText
+  created_at    DateTime @default(now())
+  user          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, activity_type])
+}
+
+model Lead {
+  leads_id          BigInt    @id @default(autoincrement())
+  scan_count        Int       @default(0)
+  add_contact_count Int       @default(0)
+  user_id           BigInt
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Lead_user_id_fkey")
+}
+
+model Connection {
+  connect_id        BigInt    @id @default(autoincrement())
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  bizcard_id        BigInt?
+  recipient_user_id BigInt
+  relationship_type String    @default("friend") @db.VarChar(20)
+  requester_user_id BigInt
+  status            String    @default("pending") @db.VarChar(20)
+  bizcard           Bizcard?  @relation(fields: [bizcard_id], references: [bizcard_id])
+  recipient         User      @relation("ConnectionRecipient", fields: [recipient_user_id], references: [user_id], onDelete: Cascade)
+  requester         User      @relation("ConnectionRequester", fields: [requester_user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([requester_user_id, recipient_user_id])
+  @@index([bizcard_id])
+  @@index([recipient_user_id, status])
+  @@index([requester_user_id, status])
+  @@index([status, created_at])
+}
+
+model Affiliate {
+  affiliates_id BigInt    @id @default(autoincrement())
+  commission    Decimal   @db.Decimal(12, 2)
+  percentage    Decimal   @db.Decimal(5, 2)
+  user_id       BigInt
+  created_at    DateTime  @default(now())
+  updated_at    DateTime?
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Affiliate_user_id_fkey")
+}
+
+model Payout {
+  payout_id        BigInt    @id @default(autoincrement())
+  amount_deposited Decimal   @db.Decimal(12, 2)
+  user_id          BigInt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime?
+  user             User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Payout_user_id_fkey")
+}
+
+model Transaction {
+  transaction_id BigInt    @id @default(autoincrement())
+  total_amount   Decimal   @db.Decimal(12, 2)
+  payment_mode   String    @db.VarChar(255)
+  user_id        BigInt
+  created_at     DateTime  @default(now())
+  updated_at     DateTime?
+  orders         Order[]
+  user           User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "Transaction_user_id_fkey")
+}
+
+model Order {
+  order_id            BigInt       @id @default(autoincrement())
+  transaction_id      BigInt
+  product_type        String       @db.VarChar(255)
+  amount              Decimal      @db.Decimal(12, 2)
+  created_at          DateTime     @default(now())
+  updated_at          DateTime?
+  commissions         Commission[]
+  transaction         Transaction  @relation(fields: [transaction_id], references: [transaction_id], onDelete: Cascade)
+  firstOrderReferrals Referral[]   @relation("ReferralFirstOrder")
+
+  @@index([transaction_id], map: "Order_transaction_id_fkey")
+}
+
+model UserActivity {
+  user_id            BigInt    @id
+  last_active        DateTime  @default(now())
+  current_session_id BigInt?
+  ip_prefix          String?   @db.VarChar(45)
+  user_agent         String?   @db.VarChar(512)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime?
+  user               User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([last_active])
+}
+
+model BlockedUser {
+  id              BigInt    @id @default(autoincrement())
+  user_id         BigInt
+  blocked_user_id BigInt
+  reason          String?   @db.VarChar(100)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime?
+  blockedUser     User      @relation("BlockedTargetUser", fields: [blocked_user_id], references: [user_id], onDelete: Cascade)
+  user            User      @relation("BlockedByUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, blocked_user_id])
+  @@index([blocked_user_id])
+}
+
+model ConnectionTag {
+  id            BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  connection_id BigInt
+  tag           String    @db.VarChar(50)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime?
+  connection    User      @relation("ConnectionTagsTarget", fields: [connection_id], references: [user_id], onDelete: Cascade)
+  user          User      @relation("ConnectionTagsOwner", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, connection_id, tag], map: "user_id_connection_id_tag")
+  @@index([user_id, tag])
+  @@index([connection_id], map: "ConnectionTag_connection_id_fkey")
+}
+
+model AffiliateSettings {
+  user_id           BigInt    @id
+  commission_rate   Decimal   @default(10.00) @db.Decimal(5, 2)
+  affiliate_level   String    @default("standard") @db.VarChar(20)
+  payment_threshold Decimal   @default(10.00) @db.Decimal(10, 2)
+  auto_withdrawal   Boolean   @default(false)
+  available_balance Decimal   @default(0.00) @db.Decimal(12, 2)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model AffiliateLink {
+  id                BigInt           @id @default(autoincrement())
+  affiliate_user_id BigInt
+  name              String           @db.VarChar(100)
+  slug              String           @unique @db.VarChar(100)
+  target_url        String?          @db.VarChar(512)
+  campaign          String?          @db.VarChar(100)
+  is_active         Boolean          @default(true)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime?
+  clicks            AffiliateClick[]
+  affiliateUser     User             @relation("AffiliateLinksOwner", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  referrals         Referral[]       @relation("ReferralsSourceLink")
+
+  @@index([affiliate_user_id, is_active])
+}
+
+model AffiliateClick {
+  id                 BigInt         @id @default(autoincrement())
+  affiliate_user_id  BigInt
+  link_id            BigInt?
+  visitor_id         String?        @db.VarChar(128)
+  ip_prefix          String?        @db.VarChar(45)
+  user_agent         String?        @db.VarChar(512)
+  source             String?        @db.VarChar(50)
+  campaign           String?        @db.VarChar(100)
+  converted          Boolean        @default(false)
+  conversion_user_id BigInt?
+  clicked_at         DateTime       @default(now())
+  created_at         DateTime       @default(now())
+  affiliateUser      User           @relation("AffiliateClicksOwner", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  conversionUser     User?          @relation("AffiliateClicksConversionUser", fields: [conversion_user_id], references: [user_id])
+  link               AffiliateLink? @relation(fields: [link_id], references: [id])
+
+  @@index([affiliate_user_id, clicked_at])
+  @@index([link_id, clicked_at])
+  @@index([conversion_user_id])
+}
+
+model Referral {
+  id                BigInt         @id @default(autoincrement())
+  affiliate_user_id BigInt
+  referred_user_id  BigInt
+  source_link_id    BigInt?
+  status            String         @default("pending") @db.VarChar(20)
+  referral_date     DateTime       @default(now())
+  conversion_date   DateTime?
+  first_order_id    BigInt?
+  lifetime_value    Decimal        @default(0.00) @db.Decimal(12, 2)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime?
+  affiliateUser     User           @relation("ReferralsAffiliateUser", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  firstOrder        Order?         @relation("ReferralFirstOrder", fields: [first_order_id], references: [order_id])
+  referredUser      User           @relation("ReferralsReferredUser", fields: [referred_user_id], references: [user_id], onDelete: Cascade)
+  sourceLink        AffiliateLink? @relation("ReferralsSourceLink", fields: [source_link_id], references: [id])
+
+  @@unique([affiliate_user_id, referred_user_id])
+  @@index([affiliate_user_id, status])
+  @@index([source_link_id])
+  @@index([referral_date])
+  @@index([first_order_id], map: "Referral_first_order_id_fkey")
+  @@index([referred_user_id], map: "Referral_referred_user_id_fkey")
+}
+
+model Commission {
+  id                BigInt    @id @default(autoincrement())
+  affiliate_user_id BigInt
+  referred_user_id  BigInt
+  order_id          BigInt
+  amount            Decimal   @db.Decimal(12, 2)
+  commission_type   String    @default("one_time") @db.VarChar(20)
+  status            String    @default("pending") @db.VarChar(20)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  paid_at           DateTime?
+  affiliateUser     User      @relation("CommissionsAffiliateUser", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  order             Order     @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  referredUser      User      @relation("CommissionsReferredUser", fields: [referred_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([affiliate_user_id, status])
+  @@index([referred_user_id])
+  @@index([created_at])
+  @@index([order_id], map: "Commission_order_id_fkey")
+}
+
+model ShopCommission {
+  shop_commission_id BigInt    @id @default(autoincrement())
+  shop_order_id      BigInt
+  affiliate_user_id  BigInt
+  referred_user_id   BigInt
+  affiliate_code     String?   @db.VarChar(50)
+  commission_rate    Decimal   @db.Decimal(5, 2)
+  discount_amount    Decimal   @default(0.00) @db.Decimal(10, 2)
+  commission_amount  Decimal   @db.Decimal(12, 2)
+  commission_type    String    @default("one_time") @db.VarChar(20)
+  status             String    @default("pending") @db.VarChar(20)
+  created_at         DateTime  @default(now())
+  processed_at       DateTime?
+  metadata           String?   @db.LongText
+  affiliateUser      User      @relation("ShopCommissionsAffiliateUser", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  referredUser       User      @relation("ShopCommissionsReferredUser", fields: [referred_user_id], references: [user_id], onDelete: Cascade)
+  shopOrder          ShopOrder @relation(fields: [shop_order_id], references: [id], onDelete: Cascade)
+
+  @@unique([shop_order_id, affiliate_user_id], map: "uq_shop_commission_order_affiliate")
+  @@index([affiliate_user_id, status])
+  @@index([referred_user_id])
+  @@index([created_at])
+}
+
+model Withdrawal {
+  id                BigInt    @id @default(autoincrement())
+  affiliate_user_id BigInt
+  amount            Decimal   @db.Decimal(12, 2)
+  currency          String    @default("USD") @db.VarChar(10)
+  status            String    @default("requested") @db.VarChar(20)
+  payment_method    String?   @db.VarChar(50)
+  payment_details   String?   @db.LongText
+  reference_number  String?   @db.VarChar(100)
+  idempotency_key   String?   @unique @db.VarChar(64)
+  requested_at      DateTime  @default(now())
+  processed_at      DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  affiliateUser     User      @relation("WithdrawalsAffiliateUser", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([affiliate_user_id, status])
+  @@index([requested_at])
+}
+
+model AffiliatePerformanceMetric {
+  metric_id           BigInt    @id @default(autoincrement())
+  affiliate_user_id   BigInt
+  period_date         DateTime  @db.Date
+  period_type         String    @db.VarChar(10)
+  referrals_count     Int       @default(0)
+  converted_referrals Int       @default(0)
+  conversion_rate     Decimal   @default(0.00) @db.Decimal(5, 2)
+  commission_earned   Decimal   @default(0.00) @db.Decimal(12, 2)
+  payout_amount       Decimal   @default(0.00) @db.Decimal(12, 2)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime?
+  affiliateUser       User      @relation("AffiliatePerformanceOwner", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([affiliate_user_id, period_date, period_type], map: "uq_affiliate_metric_period")
+  @@index([affiliate_user_id, period_date])
+  @@index([period_date])
+}
+
+model AffiliateAuditLog {
+  log_id            BigInt   @id @default(autoincrement())
+  affiliate_user_id BigInt
+  action            String   @db.VarChar(100)
+  performed_by      BigInt
+  old_values        String?  @db.LongText
+  new_values        String?  @db.LongText
+  ip_address        String?  @db.VarChar(45)
+  user_agent        String?  @db.Text
+  request_id        String?  @db.VarChar(100)
+  created_at        DateTime @default(now())
+  affiliateUser     User     @relation("AffiliateAuditSubject", fields: [affiliate_user_id], references: [user_id], onDelete: Cascade)
+  performedByUser   User     @relation("AffiliateAuditPerformer", fields: [performed_by], references: [user_id], onDelete: Cascade)
+
+  @@index([affiliate_user_id])
+  @@index([action])
+  @@index([performed_by])
+  @@index([created_at])
+}
+
+model Permission {
+  permission_id     BigInt    @id @default(autoincrement())
+  user_id           BigInt    @unique
+  edit_profile_info Boolean   @default(true)
+  add_services      Boolean   @default(false)
+  add_gallery       Boolean   @default(false)
+  change_theme      Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime?
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Notification {
+  notif_id           BigInt  @id @default(autoincrement())
+  user_id            BigInt  @unique
+  inquiry_alert      Boolean @default(false)
+  scan_alert         Boolean @default(false)
+  contact_save_alert Boolean @default(false)
+  daily_report       Boolean @default(false)
+  user               User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id                    String    @id @db.VarChar(64)
+  user_id               BigInt    @unique
+  email_verified        Boolean   @default(false)
+  digest_schedule       String    @default("daily") @db.VarChar(20)
+  digest_time           String    @default("08:00") @db.VarChar(10)
+  timezone              String    @default("UTC") @db.VarChar(64)
+  quiet_hours           String?   @db.LongText
+  preferences           String    @db.LongText
+  emails_sent_today     Int       @default(0)
+  email_frequency_reset DateTime?
+  last_digest_sent      DateTime?
+  unsubscribed_at       DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime?
+  user                  User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([digest_schedule, unsubscribed_at])
+}
+
+model UserNotification {
+  id              String                   @id @db.VarChar(64)
+  user_id         BigInt
+  trigger_user_id BigInt?
+  event_type      String                   @db.VarChar(50)
+  priority        String                   @default("medium") @db.VarChar(20)
+  title           String?                  @db.VarChar(255)
+  message         String?                  @db.Text
+  metadata        String?                  @db.LongText
+  action_url      String?                  @db.VarChar(512)
+  action_text     String?                  @db.VarChar(100)
+  is_read         Boolean                  @default(false)
+  is_archived     Boolean                  @default(false)
+  read_at         DateTime?
+  created_at      DateTime                 @default(now())
+  updated_at      DateTime?
+  deliveries      NotificationDelivery[]
+  emailQueue      NotificationEmailQueue[]
+  events          NotificationEvent[]
+  triggerUser     User?                    @relation("UserNotificationsTrigger", fields: [trigger_user_id], references: [user_id])
+  user            User                     @relation("UserNotificationsOwner", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@index([event_type, created_at])
+  @@index([trigger_user_id], map: "UserNotification_trigger_user_id_fkey")
+}
+
+model NotificationEmailQueue {
+  id              String            @id @db.VarChar(64)
+  user_id         BigInt
+  notification_id String?
+  email_type      String            @db.VarChar(30)
+  priority        Int               @default(0)
+  subject         String            @db.VarChar(255)
+  template_name   String?           @db.VarChar(100)
+  template_data   String?           @db.LongText
+  recipient_email String            @db.VarChar(255)
+  recipient_name  String?           @db.VarChar(255)
+  status          String            @default("queued") @db.VarChar(20)
+  attempts        Int               @default(0)
+  max_attempts    Int               @default(3)
+  opens           Int               @default(0)
+  clicks          Int               @default(0)
+  error_message   String?           @db.Text
+  last_attempt    DateTime?
+  sent_at         DateTime?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime?
+  notification    UserNotification? @relation(fields: [notification_id], references: [id])
+  user            User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([status, priority, created_at])
+  @@index([user_id, created_at])
+  @@index([notification_id], map: "NotificationEmailQueue_notification_id_fkey")
+}
+
+model NotificationDelivery {
+  id              String           @id @db.VarChar(64)
+  notification_id String
+  channel         String           @db.VarChar(20)
+  status          String           @default("pending") @db.VarChar(20)
+  delivered_at    DateTime?
+  error_message   String?          @db.Text
+  created_at      DateTime         @default(now())
+  updated_at      DateTime?
+  notification    UserNotification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+
+  @@index([notification_id, channel])
+  @@index([status, created_at])
+}
+
+model NotificationEvent {
+  id              String           @id @db.VarChar(64)
+  notification_id String
+  user_id         BigInt
+  event_type      String           @db.VarChar(50)
+  channel         String           @db.VarChar(20)
+  metadata        String?          @db.LongText
+  ip_address      String?          @db.VarChar(45)
+  user_agent      String?          @db.VarChar(512)
+  created_at      DateTime         @default(now())
+  notification    UserNotification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([notification_id, created_at])
+  @@index([user_id, created_at])
+}
+
+model VerificationCode {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  code_hash  String   @db.VarChar(64)
+  used       Boolean  @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, used])
+}
+
+model PasswordResetToken {
+  id                   BigInt    @id @default(autoincrement())
+  user_id              BigInt
+  token_hash           String    @unique @db.VarChar(64)
+  requested_ip         String?   @db.VarChar(45)
+  requested_user_agent String?   @db.VarChar(512)
+  expires_at           DateTime
+  used_at              DateTime?
+  created_at           DateTime  @default(now())
+  user                 User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, used_at])
+  @@index([expires_at])
+}
+
+model EmailVerificationToken {
+  id           BigInt    @id @default(autoincrement())
+  user_id      BigInt
+  target_email String    @db.VarChar(255)
+  token_hash   String    @unique @db.VarChar(64)
+  expires_at   DateTime
+  used_at      DateTime?
+  created_at   DateTime  @default(now())
+  user         User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, used_at])
+  @@index([target_email])
+  @@index([expires_at])
+}
+
+model PhoneVerificationToken {
+  id           BigInt    @id @default(autoincrement())
+  user_id      BigInt
+  phone_number String    @db.VarChar(20)
+  token_hash   String    @unique @db.VarChar(64)
+  attempts     Int       @default(0)
+  max_attempts Int       @default(5)
+  expires_at   DateTime
+  verified_at  DateTime?
+  created_at   DateTime  @default(now())
+  user         User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, verified_at])
+  @@index([phone_number])
+  @@index([expires_at])
+}
+
+model UserProfileAudit {
+  id             BigInt   @id @default(autoincrement())
+  user_id        BigInt
+  actor_user_id  BigInt?
+  action         String   @db.VarChar(50)
+  changed_fields String?  @db.LongText
+  ip_address     String?  @db.VarChar(45)
+  user_agent     String?  @db.VarChar(512)
+  created_at     DateTime @default(now())
+  actor          User?    @relation("ProfileAuditActor", fields: [actor_user_id], references: [user_id])
+  user           User     @relation("ProfileAuditSubject", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([actor_user_id, created_at])
+  @@index([action, created_at])
+}
+
+model AdminAuditLog {
+  id            BigInt   @id @default(autoincrement())
+  admin_user_id BigInt
+  admin_email   String   @db.VarChar(255)
+  action        String   @db.VarChar(100)
+  details       String?  @db.LongText
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?  @db.Text
+  created_at    DateTime @default(now())
+  admin         User     @relation(fields: [admin_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([admin_user_id])
+  @@index([action])
+  @@index([created_at])
+}
+
+model BizcardMergeHistory {
+  id                 BigInt   @id @default(autoincrement())
+  blank_bizcard_id   BigInt
+  blank_serial_id    String   @db.VarChar(100)
+  virtual_bizcard_id BigInt
+  user_id            BigInt
+  merged_at          DateTime @default(now())
+  blankBizcard       Bizcard  @relation("BlankBizcard", fields: [blank_bizcard_id], references: [bizcard_id], onDelete: Cascade)
+  user               User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  virtualBizcard     Bizcard  @relation("VirtualBizcard", fields: [virtual_bizcard_id], references: [bizcard_id], onDelete: Cascade)
+
+  @@index([blank_bizcard_id])
+  @@index([blank_serial_id])
+  @@index([virtual_bizcard_id])
+  @@index([user_id])
+  @@index([merged_at])
+}
+
+model EmailOtp {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  otp_hash   String   @db.VarChar(64)
+  attempts   Int      @default(0)
+  used       Boolean  @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
+  purpose    String   @default("email_verification") @db.VarChar(32)
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, used])
+  @@index([user_id, used, expires_at, created_at])
+  @@index([user_id, purpose, used, expires_at, created_at])
+  @@index([user_id, created_at])
+  @@index([expires_at])
+}
+
+model Session {
+  id                            BigInt                         @id @default(autoincrement())
+  user_id                       BigInt
+  token_hash                    String                         @unique @db.VarChar(64)
+  refresh_hash                  String?                        @unique @db.VarChar(64)
+  expires_at                    DateTime
+  refresh_expires_at            DateTime?
+  ip_address                    String?                        @db.VarChar(45)
+  user_agent                    String?                        @db.VarChar(512)
+  remember_me                   Boolean                        @default(false)
+  revoked                       Boolean                        @default(false)
+  created_at                    DateTime                       @default(now())
+  updated_at                    DateTime?
+  user                          User                           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  superadminImpersonationTokens SuperadminImpersonationToken[]
+
+  @@index([user_id, revoked])
+  @@index([expires_at])
+}
+
+model LoginHistory {
+  login_id    BigInt    @id @default(autoincrement())
+  user_id     BigInt
+  device_type String?   @db.VarChar(100)
+  browser     String?   @db.VarChar(100)
+  os          String?   @db.VarChar(100)
+  ip_address  String?   @db.VarChar(45)
+  location    String?   @db.VarChar(255)
+  latitude    Decimal?  @db.Decimal(10, 8)
+  longitude   Decimal?  @db.Decimal(11, 8)
+  login_time  DateTime  @default(now())
+  logout_time DateTime?
+  session_id  String?   @db.VarChar(255)
+  is_active   Boolean   @default(true)
+  user        User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_login_history_user")
+  @@index([is_active], map: "idx_login_history_active")
+  @@index([login_time], map: "idx_login_history_time")
+  @@index([session_id], map: "idx_login_history_session_id")
+  @@map("login_history")
+}
+
+model ActiveSession {
+  session_id    String    @id @db.VarChar(255)
+  user_id       BigInt
+  device_type   String?   @db.VarChar(100)
+  browser       String?   @db.VarChar(100)
+  os            String?   @db.VarChar(100)
+  ip_address    String?   @db.VarChar(45)
+  location      String?   @db.VarChar(255)
+  created_at    DateTime  @default(now())
+  expires_at    DateTime?
+  last_activity DateTime?
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_active_sessions_user")
+  @@index([expires_at], map: "idx_active_sessions_expires")
+  @@map("active_sessions")
+}
+
+model PaymentChannel {
+  channel_id              BigInt    @id @default(autoincrement())
+  user_id                 BigInt
+  bank_name               String    @db.VarChar(100)
+  account_name            String    @db.VarChar(255)
+  account_number          String    @db.VarChar(500)
+  account_number_iv       String    @db.VarChar(64)
+  account_number_auth_tag String    @db.VarChar(64)
+  account_type            String    @default("checking") @db.VarChar(20)
+  routing_number          String?   @db.VarChar(500)
+  routing_number_iv       String?   @db.VarChar(64)
+  routing_number_auth_tag String?   @db.VarChar(64)
+  swift_code              String?   @db.VarChar(50)
+  is_default              Boolean   @default(false)
+  is_active               Boolean   @default(true)
+  created_at              DateTime  @default(now())
+  updated_at              DateTime?
+  user                    User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_payment_channels_user")
+  @@index([is_default], map: "idx_payment_channels_default")
+  @@index([is_active], map: "idx_payment_channels_active")
+  @@map("payment_channels")
+}
+
+model PasswordHistory {
+  history_id    BigInt   @id @default(autoincrement())
+  user_id       BigInt
+  password_hash String   @db.VarChar(255)
+  created_at    DateTime @default(now())
+  user          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_password_history_user")
+  @@index([created_at], map: "idx_password_history_created")
+  @@map("password_history")
+}
+
+model SuperadminImpersonationToken {
+  token_id           BigInt                            @id @default(autoincrement())
+  token_hash         String                            @unique @db.VarChar(64)
+  superadmin_user_id BigInt
+  target_user_id     BigInt
+  session_id         BigInt?
+  reason             String?                           @db.Text
+  expires_at         DateTime
+  revoked            Boolean                           @default(false)
+  revoked_at         DateTime?
+  created_at         DateTime                          @default(now())
+  updated_at         DateTime?
+  audits             SuperadminImpersonationAuditLog[]
+  session            Session?                          @relation(fields: [session_id], references: [id])
+  superadmin         User                              @relation("ImpersonationSuperadmin", fields: [superadmin_user_id], references: [user_id], onDelete: Cascade)
+  target             User                              @relation("ImpersonationTarget", fields: [target_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([superadmin_user_id, revoked, expires_at])
+  @@index([target_user_id, revoked, expires_at])
+  @@index([session_id])
+  @@index([expires_at])
+}
+
+model SuperadminImpersonationAuditLog {
+  audit_id           BigInt                       @id @default(autoincrement())
+  token_id           BigInt
+  superadmin_user_id BigInt
+  target_user_id     BigInt
+  action             String                       @db.VarChar(50)
+  reason             String?                      @db.Text
+  details            String?                      @db.LongText
+  ip_address         String?                      @db.VarChar(45)
+  user_agent         String?                      @db.VarChar(512)
+  created_at         DateTime                     @default(now())
+  superadmin         User                         @relation("ImpersonationAuditSuperadmin", fields: [superadmin_user_id], references: [user_id], onDelete: Cascade)
+  target             User                         @relation("ImpersonationAuditTarget", fields: [target_user_id], references: [user_id], onDelete: Cascade)
+  token              SuperadminImpersonationToken @relation(fields: [token_id], references: [token_id], onDelete: Cascade)
+
+  @@index([token_id, created_at])
+  @@index([superadmin_user_id, created_at])
+  @@index([target_user_id, created_at])
+  @@index([action, created_at])
+}
+
+/// Authorized window for a superadmin to reveal user passwords without re-entering their password.
+model SuperadminPasswordViewGrant {
+  grant_id           BigInt    @id @default(autoincrement())
+  superadmin_user_id BigInt
+  /// Optional scope: when set, grant applies only to this target user; null = all users.
+  target_user_id     BigInt?
+  mode               String    @db.VarChar(20)
+  duration_hours     Int?
+  expires_at         DateTime?
+  one_time_consumed  Boolean   @default(false)
+  revoked_at         DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime?
+  superadmin         User      @relation("PasswordViewGrantSuperadmin", fields: [superadmin_user_id], references: [user_id], onDelete: Cascade)
+  target             User?     @relation("PasswordViewGrantTarget", fields: [target_user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([superadmin_user_id, revoked_at, expires_at], map: "spvg_sa_revoked_expires_idx")
+  @@index([target_user_id], map: "spvg_target_user_idx")
+  @@map("superadmin_password_view_grants")
+}
+
+model EmployeeCard {
+  card_id           BigInt     @id @default(autoincrement())
+  serial_id         String     @unique @db.VarChar(100)
+  company_id        BigInt?
+  assigned_user_id  BigInt?    @unique
+  activation_status String     @default("unassigned") @db.VarChar(20)
+  activated_at      DateTime?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime?
+  card_type         String     @default("employee") @db.VarChar(20)
+  scans             CardScan[]
+  user              User?      @relation(fields: [assigned_user_id], references: [user_id])
+  company           Company?   @relation(fields: [company_id], references: [company_id])
+
+  @@index([company_id, activation_status])
+  @@index([serial_id])
+}
+
+model CardScan {
+  id              BigInt       @id @default(autoincrement())
+  card_id         BigInt
+  scanned_at      DateTime     @default(now())
+  visitor_ip_hash String?      @db.VarChar(64)
+  device_type     String?      @db.VarChar(50)
+  browser         String?      @db.VarChar(100)
+  os              String?      @db.VarChar(100)
+  card            EmployeeCard @relation(fields: [card_id], references: [card_id], onDelete: Cascade)
+
+  @@index([card_id, scanned_at])
+}
+
+model QRCodeScan {
+  scan_id            BigInt   @id @default(autoincrement()) @map("scan_id")
+  bizcard_id         BigInt?
+  serial_id_raw      String?  @db.VarChar(120)
+  scanner_ip         String?  @db.VarChar(45)
+  scanner_user_agent String?  @db.Text
+  scanner_location   String?  @db.VarChar(255)
+  scan_timestamp     DateTime @default(now())
+  scan_successful    Boolean  @default(true)
+  error_message      String?  @db.Text
+  bizcard            Bizcard? @relation(fields: [bizcard_id], references: [bizcard_id])
+
+  @@index([bizcard_id, scan_timestamp], map: "idx_qr_scans_bizcard")
+  @@index([scanner_ip], map: "idx_qr_scans_ip")
+  @@index([scan_successful, scan_timestamp], map: "idx_qr_scans_success_ts")
+  @@map("qr_code_scans")
+}
+
+model VCardSetup {
+  id                 BigInt    @id @default(autoincrement())
+  user_id            BigInt    @unique
+  is_published       Boolean   @default(false)
+  setup_completed    Boolean   @default(false)
+  setup_completed_at DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime?
+  qr_code            String?   @db.Text
+  qr_generated_at    DateTime?
+  user               User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model DeletedRecord {
+  id            BigInt   @id @default(autoincrement())
+  table_name    String   @db.VarChar(100)
+  record_id     String   @db.VarChar(100)
+  deleted_by    BigInt?
+  original_data String   @db.LongText
+  reason        String?  @db.VarChar(255)
+  deleted_at    DateTime @default(now())
+
+  @@index([table_name, record_id])
+  @@index([deleted_by, deleted_at])
+  @@index([deleted_at])
+}
+
+model Merchandise {
+  id                         BigInt    @id @default(autoincrement())
+  name                       String    @unique(map: "uq_merchandise_name") @db.VarChar(255)
+  description                String?   @db.Text
+  price                      Int
+  custom_price               Boolean   @default(false)
+  custom_price_value         Decimal?  @db.Decimal(10, 2)
+  subscription_addon_prices  String?   @db.LongText
+  logo_addon_price           Decimal?  @db.Decimal(10, 2)
+  variant_prices             String?   @db.LongText
+  img_url                    String?   @db.VarChar(512)
+  front_img                  String?   @db.Text
+  back_img                   String?   @db.Text
+  variable_front_img         String?   @db.Text
+  variable_back_img          String?   @db.Text
+  custom_img                 String?   @db.VarChar(512)
+  custom_variable_img        String?   @db.VarChar(512)
+  category                   String    @db.VarChar(100)
+  is_active                  Boolean   @default(true)
+  metadata                   String?   @db.LongText
+  date_added                 DateTime? @default(now())
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime?
+  /// Subscription tier if this product includes one: basic, standard, premium
+  subscription_tier          String?   @db.VarChar(20)
+  /// Duration of subscription in days
+  subscription_duration_days Int?      @default(365)
+  auto_renewal_available     Boolean   @default(true)
+
+  @@index([category, is_active])
+  @@index([price])
+  @@index([is_active])
+  @@index([subscription_tier])
+}
+
+model SubscriptionPlan {
+  id                      BigInt                   @id @default(autoincrement())
+  name                    String                   @unique @db.VarChar(50)
+  description             String?                  @db.Text
+  tier_code               String                   @unique @db.VarChar(20)
+  price_monthly           Decimal?                 @db.Decimal(10, 2)
+  price_yearly            Decimal?                 @db.Decimal(10, 2)
+  features                String?                  @db.LongText
+  max_templates           Int?
+  max_products            Int?
+  max_virtual_cards       Int?
+  max_physical_cards      Int?
+  max_themes              Int                      @default(5)
+  max_associates          Int?
+  can_create_company      Boolean                  @default(false)
+  can_upload_gallery      Boolean                  @default(false)
+  can_manage_inquiries    Boolean                  @default(false)
+  can_real_time_analytics Boolean                  @default(false)
+  can_affiliate           Boolean                  @default(true)
+  can_dashboard           Boolean                  @default(true)
+  trial_days              Int                      @default(0)
+  is_trial                Boolean                  @default(false)
+  analytics_included      Boolean                  @default(false)
+  priority_support        Boolean                  @default(false)
+  is_active               Boolean                  @default(true)
+  display_order           Int                      @default(0)
+  created_at              DateTime                 @default(now())
+  updated_at              DateTime?
+  bizcardSubscriptions    BizcardSubscription[]
+  upgradeLogsFrom         SubscriptionUpgradeLog[] @relation("UpgradeFrom")
+  upgradeLogsTo           SubscriptionUpgradeLog[] @relation("UpgradeTo")
+
+  @@index([tier_code])
+}
+
+model BizcardSubscription {
+  id                     BigInt           @id @default(autoincrement())
+  bizcard_id             BigInt           @unique
+  plan_id                BigInt
+  status                 String           @default("pending") @db.VarChar(20)
+  billing_cycle          String           @default("monthly") @db.VarChar(20)
+  started_at             DateTime
+  expires_at             DateTime
+  cancelled_at           DateTime?
+  auto_renew             Boolean          @default(true)
+  payment_method_id      String?          @db.VarChar(255)
+  downgrade_plan_id      BigInt?
+  cancel_reason          String?          @db.Text
+  cancel_feedback        String?          @db.Text
+  xendit_customer_id     String?          @db.VarChar(255)
+  xendit_subscription_id String?          @db.VarChar(255)
+  xendit_invoice_id      String?          @db.VarChar(255)
+  created_at             DateTime         @default(now())
+  updated_at             DateTime?
+  bizcard                Bizcard          @relation(fields: [bizcard_id], references: [bizcard_id], onDelete: Cascade)
+  plan                   SubscriptionPlan @relation(fields: [plan_id], references: [id])
+
+  @@index([status, expires_at])
+  @@index([bizcard_id])
+  @@index([xendit_subscription_id])
+  @@index([xendit_invoice_id])
+  @@index([plan_id], map: "BizcardSubscription_plan_id_fkey")
+}
+
+model SubscriptionRenewalHistory {
+  renewal_id             BigInt   @id @default(autoincrement())
+  bizcard_id             BigInt
+  /// Expiry date before renewal
+  previous_expiry        DateTime
+  /// Expiry date after renewal
+  new_expiry             DateTime
+  amount_paid            Decimal  @default(0.00) @db.Decimal(10, 2)
+  payment_method         String?  @db.VarChar(50)
+  payment_transaction_id String?  @db.VarChar(255)
+  renewed_at             DateTime @default(now())
+  created_at             DateTime @default(now())
+
+  @@index([bizcard_id])
+  @@index([bizcard_id, renewed_at])
+  @@index([renewed_at])
+}
+
+model UserCookiePreferences {
+  id                      BigInt   @id @default(autoincrement())
+  user_id                 BigInt   @unique
+  preferences_enabled     Boolean  @default(false)
+  analytics_enabled       Boolean  @default(false)
+  preferences_by_category String?  @db.LongText
+  consent_version         String   @default("1.0") @db.VarChar(50)
+  consented_at            DateTime @default(now())
+  expires_at              DateTime
+  ip_address              String?  @db.VarChar(45)
+  user_agent              String?  @db.VarChar(512)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+  user                    User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("user_cookie_preferences")
+}
+
+model AnonymousCookiePreferences {
+  id                      BigInt   @id @default(autoincrement())
+  session_id              String   @unique @db.VarChar(128)
+  preferences_enabled     Boolean  @default(false)
+  analytics_enabled       Boolean  @default(false)
+  preferences_by_category String?  @db.LongText
+  consent_version         String   @default("1.0") @db.VarChar(50)
+  consented_at            DateTime @default(now())
+  expires_at              DateTime
+  ip_address              String?  @db.VarChar(45)
+  user_agent              String?  @db.VarChar(512)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@index([session_id])
+  @@index([expires_at])
+  @@map("anonymous_cookie_preferences")
+}
+
+model CookieCategory {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(100)
+  slug           String   @unique @db.VarChar(100)
+  description    String   @db.Text
+  is_essential   Boolean  @default(false)
+  duration_days  Int      @default(30)
+  policy_url     String?  @db.VarChar(512)
+  disclosure_url String?  @db.VarChar(512)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@index([slug])
+  @@map("cookie_categories")
+}
+
+model Promotion {
+  id                      BigInt            @id @default(autoincrement())
+  promo_name              String            @db.VarChar(255)
+  promo_type              String            @db.VarChar(30)
+  code                    String?           @unique @db.VarChar(50)
+  promo_value             Decimal?          @db.Decimal(10, 2)
+  discount_value          Decimal?          @db.Decimal(10, 2)
+  discount_percentage     Int?
+  promo_img               String?           @db.VarChar(512)
+  description             String?           @db.Text
+  applicable_to           String            @default("all") @db.VarChar(30)
+  target_groups           String?           @db.LongText
+  tags                    String?           @db.LongText
+  applicable_products     String?           @db.LongText
+  min_purchase_amount     Decimal?          @db.Decimal(10, 2)
+  minimum_order_amount    Decimal?          @db.Decimal(10, 2)
+  max_discount_amount     Decimal?          @db.Decimal(10, 2)
+  maximum_discount_amount Decimal?          @db.Decimal(10, 2)
+  usage_limit             Int?
+  usage_count             Int               @default(0)
+  per_user_limit          Int               @default(1)
+  starts_at               DateTime
+  expires_at              DateTime
+  is_active               Boolean           @default(true)
+  created_by              BigInt?
+  created_at              DateTime          @default(now())
+  updated_at              DateTime?
+  source                  String?           @db.VarChar(20)
+  spin_id                 BigInt?
+  redirect_path           String?           @db.VarChar(512)
+  usageLogs               PromoUsage[]
+  createdByUser           User?             @relation("PromotionCreatedBy", fields: [created_by], references: [user_id])
+  shopOrders              ShopOrder[]
+  spinHistory             SpinHistory[]     @relation("PromotionSpin")
+  checkoutSessions        CheckoutSession[]
+
+  @@index([is_active, starts_at, expires_at])
+  @@index([promo_type])
+  @@index([starts_at, expires_at])
+  @@index([created_by], map: "Promotion_created_by_fkey")
+  @@index([source])
+  @@index([spin_id])
+}
+
+model PromoUsage {
+  usage_id        BigInt    @id @default(autoincrement())
+  promo_id        BigInt
+  user_id         BigInt
+  order_id        String?
+  discount_amount Decimal   @db.Decimal(10, 2)
+  used_at         DateTime  @default(now())
+  promo           Promotion @relation(fields: [promo_id], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([promo_id], map: "idx_promo_usage_promo")
+  @@index([user_id], map: "idx_promo_usage_user")
+  @@index([used_at], map: "idx_promo_usage_date")
+  @@index([promo_id, user_id], map: "idx_promo_usage_promo_user")
+}
+
+model MarketingEmailCampaign {
+  id              String    @id @db.VarChar(64)
+  title           String    @db.VarChar(255)
+  content         String    @db.LongText
+  /// JSON string array of promo image URLs embedded in the email body
+  image_urls      String?   @db.LongText
+  audience        String    @db.LongText
+  custom_user_ids String?   @db.LongText
+  status          String    @default("draft") @db.VarChar(20)
+  recipient_count Int       @default(0)
+  scheduled_at    DateTime?
+  sent_at         DateTime?
+  created_by      BigInt?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime?
+  createdByUser   User?     @relation("MarketingEmailCampaignCreatedBy", fields: [created_by], references: [user_id])
+
+  @@index([status])
+  @@index([created_by])
+  @@index([created_at])
+}
+
+model SpinHistory {
+  spin_id             BigInt     @id @default(autoincrement())
+  user_id             BigInt
+  prize_type          String     @db.VarChar(50)
+  prize_value         Decimal?   @db.Decimal(10, 2)
+  discount_percentage Int?
+  voucher_code        String?    @db.VarChar(50)
+  promo_id            BigInt?
+  source              String     @default("spin") @db.VarChar(50)
+  order_id            BigInt?
+  created_at          DateTime   @default(now())
+  order               ShopOrder? @relation(fields: [order_id], references: [id])
+  promotion           Promotion? @relation("PromotionSpin", fields: [promo_id], references: [id])
+  user                User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+  @@index([promo_id])
+  @@index([order_id])
+  @@index([source])
+}
+
+model DeviceUsage {
+  id                 BigInt    @id @default(autoincrement())
+  device_fingerprint String    @unique @db.VarChar(255)
+  primary_user_id    BigInt?   @unique
+  linked_user_ids    String?   @db.LongText
+  spins_used         Int       @default(0)
+  last_spin_at       DateTime?
+  first_seen_at      DateTime  @default(now())
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  primaryUser        User?     @relation("DeviceUsagePrimary", fields: [primary_user_id], references: [user_id])
+
+  @@index([device_fingerprint])
+  @@index([primary_user_id])
+  @@index([created_at])
+  @@index([last_spin_at])
+}
+
+model Cart {
+  id         BigInt     @id @default(autoincrement())
+  user_id    BigInt     @unique
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  user       User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  items      CartItem[]
+
+  @@index([updated_at])
+}
+
+model CartItem {
+  id                BigInt   @id @default(autoincrement())
+  cart_id           BigInt?
+  user_id           BigInt
+  item_type         String   @db.VarChar(20)
+  item_id           BigInt
+  variant           String?  @db.VarChar(255)
+  subscription_tier String?  @db.VarChar(50)
+  logo_type         String?  @db.VarChar(50)
+  note              String?  @db.Text
+  quantity          Int      @default(1)
+  price_at_time     Decimal  @db.Decimal(10, 2)
+  custom_data       String?  @db.LongText
+  added_at          DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  cart              Cart?    @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, item_type, item_id, variant, subscription_tier, logo_type])
+  @@index([cart_id])
+  @@index([user_id, added_at])
+}
+
+/// Temporary checkout session — stores cart snapshot before payment
+/// Only created on checkout, deleted when order is confirmed or session expires (24h)
+model CheckoutSession {
+  id                BigInt     @id @default(autoincrement())
+  /// UUID session token for post-payment redirect
+  session_id        String     @unique @db.VarChar(100)
+  user_id           BigInt
+  /// Snapshot of cart items at checkout time
+  cart_snapshot     String     @db.LongText
+  /// Pre-calculated line items (product price from DB)
+  line_items        String     @db.LongText
+  subtotal          Decimal    @db.Decimal(10, 2)
+  discount_amount   Decimal    @default(0.00) @db.Decimal(10, 2)
+  tax_amount        Decimal    @default(0.00) @db.Decimal(10, 2)
+  shipping_amount   Decimal    @default(0.00) @db.Decimal(10, 2)
+  total_amount      Decimal    @db.Decimal(10, 2)
+  /// Fixed to PHP
+  currency          String     @default("PHP") @db.VarChar(3)
+  promo_code        String?    @db.VarChar(50)
+  promo_id          BigInt?
+  /// Xendit invoice ID
+  invoice_id        String?    @db.VarChar(255)
+  /// ShopOrder ID once payment succeeds
+  order_id          BigInt?
+  /// pending, completed, expired, failed
+  status            String     @default("pending") @db.VarChar(20)
+  /// Shipping address JSON
+  shipping_address  String?    @db.LongText
+  /// Billing address JSON
+  billing_address   String?    @db.LongText
+  payment_method_id String?    @db.VarChar(50)
+  notes             String?    @db.Text
+  created_at        DateTime   @default(now())
+  /// 24h expiry
+  expires_at        DateTime
+  updated_at        DateTime   @updatedAt
+  order             ShopOrder? @relation(fields: [order_id], references: [id])
+  promo             Promotion? @relation(fields: [promo_id], references: [id])
+  user              User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([session_id])
+  @@index([user_id])
+  @@index([invoice_id])
+  @@index([order_id])
+  @@index([status, expires_at])
+  @@index([status, user_id])
+  @@index([promo_id], map: "checkout_sessions_promo_id_fkey")
+  @@map("checkout_sessions")
+}
+
+model ShopOrder {
+  id                    BigInt                   @id @default(autoincrement())
+  order_number          String                   @unique @db.VarChar(50)
+  user_id               BigInt
+  status                String                   @default("pending") @db.VarChar(20)
+  subtotal              Decimal                  @db.Decimal(10, 2)
+  discount_amount       Decimal                  @default(0.00) @db.Decimal(10, 2)
+  tax_amount            Decimal                  @default(0.00) @db.Decimal(10, 2)
+  shipping_amount       Decimal                  @default(0.00) @db.Decimal(10, 2)
+  total_amount          Decimal                  @db.Decimal(10, 2)
+  currency              String                   @default("PHP") @db.VarChar(3)
+  payment_method        String?                  @db.VarChar(50)
+  payment_id            String?                  @db.VarChar(255)
+  promo_id              BigInt?
+  shipping_address      String?                  @db.LongText
+  billing_address       String?                  @db.LongText
+  notes                 String?                  @db.Text
+  tracking_number       String?                  @db.VarChar(100)
+  tracking_carrier      String?                  @db.VarChar(100)
+  tracking_url          String?                  @db.VarChar(500)
+  status_changed_at     DateTime?
+  status_changed_by     BigInt?
+  status_change_note    String?                  @db.Text
+  placed_at             DateTime                 @default(now())
+  completed_at          DateTime?
+  cancelled_at          DateTime?
+  refunded_at           DateTime?
+  xendit_invoice_id     String?                  @db.VarChar(255)
+  xendit_invoice_url    String?                  @db.VarChar(500)
+  xendit_payment_id     String?                  @db.VarChar(255)
+  xendit_status         String?                  @db.VarChar(50)
+  xendit_payment_method String?                  @db.VarChar(100)
+  feedback              OrderFeedback?
+  statusAuditLogs       OrderStatusAuditLog[]
+  statusCache           OrderStatusCache?
+  purchaseLogs          PurchaseLog[]
+  shopCommissions       ShopCommission[]
+  promo                 Promotion?               @relation(fields: [promo_id], references: [id])
+  statusChangedBy       User?                    @relation("ShopOrderStatusChangedBy", fields: [status_changed_by], references: [user_id])
+  user                  User                     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  items                 ShopOrderItem[]
+  spinAwards            SpinHistory[]
+  upgradeLogs           SubscriptionUpgradeLog[]
+  templatePurchases     TemplatePurchase[]
+  checkoutSessions      CheckoutSession[]
+
+  @@index([user_id, placed_at])
+  @@index([status, placed_at])
+  @@index([xendit_invoice_id])
+  @@index([xendit_payment_id])
+  @@index([tracking_number])
+  @@index([status_changed_by], map: "ShopOrder_status_changed_by_fkey")
+  @@index([order_number])
+  @@index([promo_id], map: "ShopOrder_promo_id_fkey")
+}
+
+/// One-time post-purchase feedback invitation (emailed after completed/delivered).
+model OrderFeedback {
+  id              BigInt    @id @default(autoincrement())
+  uuid            String    @unique @db.VarChar(36)
+  order_id        BigInt    @unique
+  user_id         BigInt
+  status          String    @default("pending") @db.VarChar(20)
+  overall_rating  Int?
+  product_rating  Int?
+  delivery_rating Int?
+  recommend       Boolean?
+  message         String?   @db.Text
+  email_sent_at   DateTime?
+  submitted_at    DateTime?
+  expires_at      DateTime
+  created_at      DateTime  @default(now())
+  updated_at      DateTime?
+  order           ShopOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([status, email_sent_at])
+  @@index([expires_at])
+}
+
+model OrderStatusAuditLog {
+  log_id          BigInt    @id @default(autoincrement())
+  order_id        BigInt
+  previous_status String?   @db.VarChar(20)
+  next_status     String    @db.VarChar(20)
+  reason          String?   @db.Text
+  changed_by      BigInt
+  request_id      String?   @db.VarChar(100)
+  ip_address      String?   @db.VarChar(45)
+  user_agent      String?   @db.Text
+  metadata        String?   @db.LongText
+  changed_at      DateTime  @default(now())
+  actor           User      @relation("OrderStatusAuditActor", fields: [changed_by], references: [user_id], onDelete: Cascade)
+  order           ShopOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id, changed_at])
+  @@index([changed_by])
+  @@index([next_status])
+}
+
+model DevIncident {
+  incident_id              BigInt            @id @default(autoincrement())
+  incident_key             String            @unique @db.VarChar(64)
+  title                    String            @db.VarChar(255)
+  status                   String            @default("open") @db.VarChar(30)
+  severity                 String            @default("medium") @db.VarChar(20)
+  source_type              String?           @db.VarChar(30)
+  route_key                String?           @db.VarChar(255)
+  first_seen_at            DateTime
+  last_seen_at             DateTime
+  occurrence_count         Int               @default(0)
+  affected_users_count     Int               @default(0)
+  affected_companies_count Int               @default(0)
+  owner_user_id            BigInt?
+  resolution_note          String?           @db.Text
+  resolved_at              DateTime?
+  created_at               DateTime          @default(now())
+  updated_at               DateTime?         @updatedAt
+  owner                    User?             @relation("DevIncidentOwner", fields: [owner_user_id], references: [user_id])
+  links                    DevIncidentLink[]
+
+  @@index([status, severity])
+  @@index([last_seen_at])
+  @@index([owner_user_id])
+}
+
+model DevIncidentLink {
+  link_id       BigInt      @id @default(autoincrement())
+  incident_id   BigInt
+  entity_type   String      @db.VarChar(50)
+  entity_id     String      @db.VarChar(128)
+  relation_type String      @default("detected") @db.VarChar(30)
+  metadata      String?     @db.LongText
+  created_at    DateTime    @default(now())
+  incident      DevIncident @relation(fields: [incident_id], references: [incident_id], onDelete: Cascade)
+
+  @@unique([incident_id, entity_type, entity_id])
+  @@index([entity_type, entity_id])
+}
+
+model DevFeatureFlag {
+  feature_flag_id BigInt    @id @default(autoincrement())
+  flag_key        String    @unique @db.VarChar(64)
+  label           String    @db.VarChar(120)
+  description     String?   @db.Text
+  scope           String    @default("global") @db.VarChar(30)
+  enabled         Boolean   @default(false)
+  note            String?   @db.Text
+  updated_by      BigInt?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  updater         User?     @relation("DevFeatureFlagUpdater", fields: [updated_by], references: [user_id])
+
+  @@index([scope, enabled])
+  @@index([updated_by])
+}
+
+model DevIntegrityCheckResult {
+  check_result_id BigInt   @id @default(autoincrement())
+  check_key       String   @db.VarChar(80)
+  status          String   @db.VarChar(20)
+  issue_count     Int      @default(0)
+  summary         String?  @db.Text
+  details         String?  @db.LongText
+  created_by      BigInt?
+  created_at      DateTime @default(now())
+  actor           User?    @relation("DevIntegrityCheckActor", fields: [created_by], references: [user_id])
+
+  @@index([check_key, created_at])
+  @@index([status, created_at])
+  @@index([created_by])
+}
+
+/// Platform notice-board posts composed in the Developer Portal.
+model DevNotice {
+  notice_id      BigInt    @id @default(autoincrement())
+  public_id      String    @unique @db.VarChar(40)
+  title          String    @db.VarChar(200)
+  summary        String?   @db.VarChar(320)
+  body           String    @db.Text
+  notice_type    String    @db.VarChar(32)
+  status         String    @default("draft") @db.VarChar(20)
+  priority       String    @default("medium") @db.VarChar(16)
+  /// JSON string array of portals: user | admin | staff
+  portals        String    @db.Text
+  /// JSON string array of surface placements (dashboard, emarket, …)
+  placements     String    @db.Text
+  /// JSON string array of audience segments (role_*, tier_*, new_users, …)
+  audiences      String    @db.Text
+  /// JSON string array of channels: in_app | email
+  channels       String    @db.Text
+  cta_label      String?   @db.VarChar(80)
+  cta_url        String?   @db.VarChar(512)
+  survey_url     String?   @db.VarChar(512)
+  /// JSON string arrays for What's New changelog sections
+  whats_new_added   String? @db.LongText
+  whats_new_fixed   String? @db.LongText
+  whats_new_removed String? @db.LongText
+  /// JSON SurveyQuestion[] for in-app survey builder
+  survey_questions  String? @db.LongText
+  /// JSON string[] of specific user_id targets (optional allow-list)
+  target_user_ids   String? @db.Text
+  /// JSON string[] of media URLs for promotion creatives
+  media_urls        String? @db.LongText
+  accent_color   String?   @db.VarChar(16)
+  starts_at      DateTime?
+  ends_at        DateTime?
+  published_at   DateTime?
+  notified_at    DateTime?
+  notify_in_app  Int       @default(0)
+  notify_email   Int       @default(0)
+  notify_skipped Int       @default(0)
+  created_by     BigInt?
+  updated_by     BigInt?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+  deleted_at     DateTime?
+  creator        User?     @relation("DevNoticeCreator", fields: [created_by], references: [user_id])
+  updater        User?     @relation("DevNoticeUpdater", fields: [updated_by], references: [user_id])
+  surveyResponses DevSurveyResponse[]
+
+  @@index([status, notice_type])
+  @@index([published_at])
+  @@index([deleted_at])
+  @@index([created_by])
+  @@map("DevNotice")
+}
+
+model DevSurveyResponse {
+  response_id BigInt   @id @default(autoincrement())
+  notice_id   BigInt
+  user_id     BigInt
+  answers     String   @db.LongText
+  created_at  DateTime @default(now())
+  notice      DevNotice @relation(fields: [notice_id], references: [notice_id], onDelete: Cascade)
+  user        User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([notice_id, user_id])
+  @@index([notice_id])
+  @@index([user_id])
+  @@map("DevSurveyResponse")
+}
+
+model OrderStatusCache {
+  cache_id          BigInt    @id @default(autoincrement())
+  order_id          BigInt    @unique
+  order_number      String    @unique @db.VarChar(50)
+  user_id           BigInt
+  status            String    @db.VarChar(20)
+  previous_status   String?   @db.VarChar(20)
+  status_changed_at DateTime
+  placed_at         DateTime
+  completed_at      DateTime?
+  cancelled_at      DateTime?
+  refunded_at       DateTime?
+  total_amount      Decimal   @db.Decimal(10, 2)
+  currency          String    @db.VarChar(3)
+  updated_at        DateTime?
+  order             ShopOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([status, status_changed_at])
+  @@index([user_id, status])
+  @@index([updated_at])
+}
+
+model ShopOrderItem {
+  id          BigInt    @id @default(autoincrement())
+  order_id    BigInt
+  item_type   String    @db.VarChar(20)
+  item_id     BigInt
+  item_name   String    @db.VarChar(255)
+  quantity    Int
+  unit_price  Decimal   @db.Decimal(10, 2)
+  total_price Decimal   @db.Decimal(10, 2)
+  custom_data String?   @db.LongText
+  created_at  DateTime  @default(now())
+  order       ShopOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
+}
+
+model PurchaseLog {
+  id            BigInt     @id @default(autoincrement())
+  user_id       BigInt
+  purchase_type String     @db.VarChar(20)
+  item_id       BigInt
+  item_name     String     @db.VarChar(255)
+  order_id      BigInt?
+  amount        Decimal    @db.Decimal(10, 2)
+  status        String     @default("completed") @db.VarChar(20)
+  metadata      String?    @db.LongText
+  purchased_at  DateTime   @default(now())
+  order         ShopOrder? @relation(fields: [order_id], references: [id])
+  user          User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, purchased_at])
+  @@index([purchase_type, purchased_at])
+  @@index([item_id])
+  @@index([order_id], map: "PurchaseLog_order_id_fkey")
+}
+
+model TemplatePurchase {
+  id              BigInt     @id @default(autoincrement())
+  user_id         BigInt
+  template_id     BigInt
+  order_id        BigInt?
+  price_paid      Decimal    @db.Decimal(10, 2)
+  license_type    String     @default("personal") @db.VarChar(20)
+  download_count  Int        @default(0)
+  last_downloaded DateTime?
+  purchased_at    DateTime   @default(now())
+  order           ShopOrder? @relation(fields: [order_id], references: [id])
+  template        Theme      @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, template_id])
+  @@index([user_id])
+  @@index([template_id])
+  @@index([order_id], map: "TemplatePurchase_order_id_fkey")
+}
+
+model SubscriptionUpgradeLog {
+  id             BigInt            @id @default(autoincrement())
+  bizcard_id     BigInt
+  from_plan_id   BigInt?
+  to_plan_id     BigInt
+  upgrade_type   String            @db.VarChar(30)
+  amount_paid    Decimal?          @db.Decimal(10, 2)
+  billing_cycle  String?           @db.VarChar(20)
+  effective_date DateTime
+  expiry_date    DateTime?
+  order_id       BigInt?
+  created_at     DateTime          @default(now())
+  bizcard        Bizcard           @relation("BizcardUpgradeLogs", fields: [bizcard_id], references: [bizcard_id], onDelete: Cascade)
+  fromPlan       SubscriptionPlan? @relation("UpgradeFrom", fields: [from_plan_id], references: [id])
+  order          ShopOrder?        @relation(fields: [order_id], references: [id])
+  toPlan         SubscriptionPlan  @relation("UpgradeTo", fields: [to_plan_id], references: [id])
+
+  @@index([bizcard_id, effective_date])
+  @@index([order_id])
+  @@index([from_plan_id], map: "SubscriptionUpgradeLog_from_plan_id_fkey")
+  @@index([to_plan_id], map: "SubscriptionUpgradeLog_to_plan_id_fkey")
+}
+
+model WebhookEvent {
+  id              BigInt   @id @default(autoincrement())
+  provider        String   @db.VarChar(50)
+  event_id        String   @db.VarChar(255)
+  event_type      String   @db.VarChar(100)
+  status          String   @default("processed") @db.VarChar(20)
+  idempotency_key String?  @db.VarChar(255)
+  metadata        String?  @db.LongText
+  created_at      DateTime @default(now())
+
+  @@unique([provider, event_id], map: "provider_event_id")
+  @@index([provider, created_at])
+}
+
+model PaymentIdempotency {
+  id              BigInt   @id @default(autoincrement())
+  idempotency_key String   @unique @db.VarChar(255)
+  user_id         BigInt
+  action          String   @db.VarChar(100)
+  payload_hash    String   @db.VarChar(128)
+  result          String?  @db.LongText
+  expires_at      DateTime
+  created_at      DateTime @default(now())
+
+  @@index([user_id, action, expires_at])
+  @@index([idempotency_key, expires_at])
+}
+
+model SystemHealthLog {
+  id          BigInt   @id @default(autoincrement())
+  metric_type String   @db.VarChar(100)
+  value       Float?
+  metadata    String?  @db.LongText
+  created_at  DateTime @default(now())
+
+  @@index([metric_type, created_at], map: "idx_system_health_type_created")
+  @@index([created_at], map: "idx_system_health_created")
+}
+
+model SecurityAlert {
+  id         BigInt   @id @default(autoincrement())
+  alert_type String   @db.VarChar(100)
+  severity   String   @default("warning") @db.VarChar(20)
+  user_id    BigInt?
+  ip_address String?  @db.VarChar(45)
+  user_agent String?  @db.Text
+  metadata   String?  @db.LongText
+  created_at DateTime @default(now())
+
+  @@index([alert_type, created_at], map: "idx_alerts_type_created")
+  @@index([user_id, created_at], map: "idx_alerts_user_created")
+}
+
+model ProductInquiry {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt?
+  name       String   @db.VarChar(255)
+  email      String   @db.VarChar(255)
+  contact    String   @db.VarChar(50)
+  note       String?  @db.Text
+  items      String   @db.LongText
+  status     String   @default("pending") @db.VarChar(20)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([email])
+  @@index([status])
+  @@index([created_at])
+}
+
+model User_new {
+  user_id        BigInt        @id @default(autoincrement())
+  first_name     String        @db.VarChar(100)
+  middle_name    String?       @db.VarChar(100)
+  last_name      String        @db.VarChar(100)
+  email          String        @unique(map: "uq_user_new_email") @db.VarChar(255)
+  alt_email      String?       @db.VarChar(255)
+  contact_number String?       @db.VarChar(50)
+  profile_img    String?       @db.VarChar(500)
+  cover_photo    String?       @db.VarChar(500)
+  affiliate_code String?       @unique(map: "uq_user_new_affiliate_code") @db.VarChar(100)
+  role           User_new_role @default(user)
+  company_id     BigInt?
+  is_active      Boolean       @default(true)
+  created_at     DateTime      @default(now()) @db.DateTime(0)
+  updated_at     DateTime?     @db.DateTime(0)
+  Company        Company?      @relation(fields: [company_id], references: [company_id], onUpdate: Restrict, map: "fk_user_new_company")
+
+  @@index([is_active], map: "idx_users_active")
+  @@index([affiliate_code], map: "idx_users_affiliate_code")
+  @@index([company_id], map: "idx_users_company")
+  @@index([email], map: "idx_users_email")
+  @@index([role], map: "idx_users_role")
+  @@fulltext([first_name, last_name, email], map: "idx_users_search")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model legacy_portal_users {
+  id                    BigInt    @db.UnsignedBigInt
+  serial_id             String?   @db.VarChar(255)
+  first_name            String    @db.VarChar(255)
+  last_name             String    @db.VarChar(255)
+  role                  String?   @default("Admin") @db.VarChar(100)
+  email                 String
+  contact               String?   @db.VarChar(255)
+  region_code           String?   @db.VarChar(255)
+  is_active             Boolean   @default(true)
+  steps                 Int       @default(1)
+  language              String?   @default("en") @db.VarChar(255)
+  email_verified_at     DateTime? @db.Timestamp(0)
+  password              String    @db.VarChar(255)
+  affiliate_code        String?   @db.VarChar(255)
+  theme_mode            Boolean   @default(false)
+  tenant_id             String
+  remember_token        String?   @db.VarChar(100)
+  created_by            String?   @db.VarChar(100)
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+  vcard_table_view_type Boolean   @default(true)
+  ParentID              BigInt?   @db.UnsignedBigInt
+
+  @@ignore
+}
+
+model security_alerts {
+  id         BigInt                    @id @default(autoincrement())
+  alert_type String                    @db.VarChar(100)
+  severity   security_alerts_severity? @default(warning)
+  user_id    BigInt?
+  ip_address String?                   @db.VarChar(45)
+  user_agent String?                   @db.Text
+  metadata   String?                   @db.LongText
+  created_at DateTime?                 @default(now()) @db.DateTime(0)
+
+  @@index([alert_type, created_at], map: "idx_alerts_type_created")
+  @@index([user_id, created_at], map: "idx_alerts_user_created")
+}
+
+model WebAuthnCredential {
+  id              BigInt    @id @default(autoincrement())
+  user_id         BigInt
+  credential_id   String    @unique @db.VarChar(255)
+  credential_name String?   @db.VarChar(255)
+  public_key      Bytes
+  counter         Int       @default(0)
+  transports      String?   @db.VarChar(255)
+  device_type     String?   @db.VarChar(32)
+  backed_up       Boolean   @default(false)
+  last_used_at    DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime?
+  user            User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, credential_id])
+}
+
+model PendingRegistration {
+  id                     BigInt   @id @default(autoincrement())
+  email                  String   @unique @db.VarChar(254)
+  password_hash          String   @db.VarChar(255)
+  first_name             String   @db.VarChar(100)
+  last_name              String   @db.VarChar(100)
+  middle_name            String?  @db.VarChar(100)
+  contact                String?  @db.VarChar(20)
+  registration_type      String   @default("individual") @db.VarChar(20)
+  company_name           String?  @db.VarChar(255)
+  promotional_opt_in     Boolean  @default(false)
+  registration_ip        String?  @db.VarChar(45)
+  registration_location  String?  @db.VarChar(255)
+  registration_latitude  Decimal? @db.Decimal(10, 8)
+  registration_longitude Decimal? @db.Decimal(11, 8)
+  otp_hash               String   @db.VarChar(64)
+  otp_attempts           Int      @default(0)
+  otp_expires_at         DateTime
+  device_id              String?  @db.VarChar(255)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  @@index([email])
+  @@index([otp_expires_at])
+  @@index([created_at])
+}
+
+enum BizcardType {
+  virtual
+  physical
+}
+
+enum security_alerts_severity {
+  info
+  warning
+  critical
+}
+
+enum User_new_role {
+  user
+  admin
+  super_admin
+}
+
+enum Media_media_type {
+  image
+  video
+  document
+}

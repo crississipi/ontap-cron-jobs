@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Pin turbopack root to this package (avoids picking a parent lockfile).
+  turbopack: {
+    root: path.join(__dirname),
+  },
 };
 
 export default nextConfig;

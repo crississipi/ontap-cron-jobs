@@ -1,0 +1,197 @@
+// ──────────────────────────────────────────────────────────────
+// Analytics Prisma Schema
+// ──────────────────────────────────────────────────────────────
+// Separate datasource pointing to NEWANALYTICS_DATABASE_URL.
+// Contains audit, security, and behavioral analytics tables.
+//
+// WHY separate from main schema?
+// - Prevents analytics writes from slowing down transactional queries
+// - Independent scaling — analytics DB can grow without affecting main
+// - Clean data boundary for GDPR / data retention policies
+// - Enables analytics DB backups without exposing PII from main DB
+//
+// NOTE: No @relation decorators — cross-database FK constraints are not
+// supported in MySQL. user_id / portfolio_owner_id etc. are stored as
+// plain BigInt references. Application code enforces integrity.
+// ──────────────────────────────────────────────────────────────
+
+generator analyticsClient {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/analytics-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("NEWANALYTICS_DATABASE_URL")
+}
+// ──────────────────────────────────────────
+// ANALYTICS (Page-Level Visit Tracking)
+// ─────────────────────────────────────────
+model Analytics {
+  analytics_id BigInt   @id @default(autoincrement())
+  user_id      BigInt
+  session_id   String?  @db.VarChar(255)
+  source       String?  @db.VarChar(255)
+  country      String?  @db.VarChar(100)
+  browser      String?  @db.VarChar(100)
+  device       String?  @db.VarChar(100)
+  os           String?  @db.VarChar(100)
+  ip           Bytes?
+  metadata     Json?
+  created_at   DateTime @default(now())
+
+  @@index([user_id, created_at])
+}
+
+// ──────────────────────────────────────────
+// AUDIT LOG (Security Event Logging)
+// ──────────────────────────────────────────
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt?
+  action     String   @db.VarChar(100)
+  ip_address String?  @db.VarChar(45)
+  user_agent String?  @db.VarChar(512)
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@index([action, created_at])
+}
+
+// ──────────────────────────────────────────
+// LOGIN ATTEMPTS (Brute-Force Audit Trail)
+// ──────────────────────────────────────────
+
+model LoginAttempt {
+  id         BigInt   @id @default(autoincrement())
+  email      String   @db.VarChar(191)
+  ip_address String   @db.VarChar(45)
+  success    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([email, created_at])
+  @@index([ip_address, created_at])
+}
+
+// ──────────────────────────────────────────
+// ACCOUNT LOCKOUT (Progressive Lockout State)
+// ──────────────────────────────────────────
+
+model AccountLockout {
+  id              BigInt   @id @default(autoincrement())
+  email           String   @unique @db.VarChar(191)
+  failed_attempts Int      @default(0)
+  locked_until    DateTime?
+  last_attempt_at DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime?
+
+  @@index([email])
+}
+
+// ──────────────────────────────────────────
+// PORTFOLIO VIEW (Visit-Level Analytics)
+// ──────────────────────────────────────────
+
+model PortfolioView {
+  id                   BigInt   @id @default(autoincrement())
+  portfolio_owner_id   BigInt
+  visitor_user_id      BigInt?
+  anonymous_session_id String?  @db.VarChar(128)
+  visitor_ip_hash      String?  @db.VarChar(64)
+  visitor_ip_prefix    String?  @db.VarChar(64)
+  visitor_user_agent   String?  @db.VarChar(512)
+  device_type          String?  @db.VarChar(50)
+  browser              String?  @db.VarChar(100)
+  os                   String?  @db.VarChar(100)
+  referrer             String?  @db.VarChar(512)
+  country_code         String?  @db.VarChar(8)
+  country              String?  @db.VarChar(100)
+  city                 String?  @db.VarChar(100)
+  latitude             Decimal? @db.Decimal(10,7)
+  longitude            Decimal? @db.Decimal(10,7)
+  created_at           DateTime @default(now())
+
+  @@index([portfolio_owner_id, created_at])
+  @@index([portfolio_owner_id, visitor_user_id])
+  @@index([portfolio_owner_id, anonymous_session_id])
+  @@index([portfolio_owner_id, country_code, created_at])
+  @@index([portfolio_owner_id, city, created_at])
+  @@index([portfolio_owner_id, device_type])
+  @@index([portfolio_owner_id, browser])
+}
+
+// ──────────────────────────────────────────
+// CONTACT SAVE (Contact Download Events)
+// ──────────────────────────────────────────
+
+model ContactSave {
+  id                   BigInt   @id @default(autoincrement())
+  portfolio_owner_id   BigInt
+  visitor_user_id      BigInt?
+  anonymous_session_id String?  @db.VarChar(128)
+  save_type            String   @db.VarChar(20) @default("vcf")
+  visitor_ip_prefix    String?  @db.VarChar(64)
+  visitor_user_agent   String?  @db.VarChar(512)
+  device_type          String?  @db.VarChar(50)
+  browser              String?  @db.VarChar(100)
+  os                   String?  @db.VarChar(100)
+  referrer             String?  @db.VarChar(512)
+  country_code         String?  @db.VarChar(8)
+  country              String?  @db.VarChar(100)
+  city                 String?  @db.VarChar(100)
+  latitude             Decimal? @db.Decimal(10,7)
+  longitude            Decimal? @db.Decimal(10,7)
+  created_at           DateTime @default(now())
+
+  @@index([portfolio_owner_id, created_at])
+  @@index([portfolio_owner_id, visitor_user_id])
+  @@index([portfolio_owner_id, anonymous_session_id])
+  @@index([portfolio_owner_id, country_code, created_at])
+  @@index([portfolio_owner_id, save_type])
+}
+
+// ──────────────────────────────────────────
+// SYSTEM ERROR LOG (Frontend Error Monitoring)
+// ──────────────────────────────────────────
+
+model SystemErrorLog {
+  id              BigInt   @id @default(autoincrement())
+  session_id      String?  @db.VarChar(255)
+  user_id         BigInt?
+  error_message   String   @db.Text
+  stack_trace     String?  @db.LongText
+  file_name       String?  @db.VarChar(500)
+  line_number     Int?
+  col_number      Int?
+  browser_info    String?  @db.VarChar(512)
+  device_info     String?  @db.VarChar(255)
+  page_url        String?  @db.VarChar(2048)
+  severity_level  String   @db.VarChar(20)
+  created_at      DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@index([severity_level, created_at])
+  @@index([created_at])
+}
+
+// Mirror of main DB Session model for migration
+model Session {
+  id                 BigInt    @id @default(autoincrement())
+  user_id            BigInt
+  token_hash         String    @unique @db.VarChar(64)
+  refresh_hash       String?   @unique @db.VarChar(64)
+  expires_at         DateTime
+  refresh_expires_at DateTime?
+  ip_address         String?   @db.VarChar(45)
+  user_agent         String?   @db.VarChar(512)
+  remember_me        Boolean   @default(false)
+  revoked            Boolean   @default(false)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime?
+
+  @@index([user_id, revoked])
+  @@index([expires_at])
+}
