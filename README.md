@@ -39,29 +39,33 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 ## Endpoints
 
-| Method | Path |
-|--------|------|
-| GET | `/api/cron/process-email-queue` |
-| GET | `/api/cron/retry-failed-emails` |
-| GET | `/api/cron/reset-email-counts` |
-| GET | `/api/cron/send-daily-digests` |
-| GET | `/api/cron/send-weekly-digests` |
-| GET | `/api/cron/send-scheduled-newsletters` |
-| GET | `/api/cron/subscription-expiry` |
-| GET | `/api/cron/order-feedback-requests` |
-| GET | `/api/cron/superadmin-user-report` |
-| GET | `/api/cron/superadmin-inactive-users` |
-| GET | `/api/cron/process-qr-queue` |
-| GET | `/api/cron/init-subscription-system` |
-| GET | `/api/cron/cleanup-webhook-events` |
-| GET | `/api/cron/cleanup-checkout-sessions` |
-| GET | `/api/cron/cleanup-notifications` |
-| GET | `/api/cron/cleanup` |
-| GET | `/api/cron/company-daily-summary` |
-| GET | `/api/cron/company-weekly-summary` |
-| GET | `/api/cron/company-top-performer-alert` |
-| POST | `/api/cron/abandoned-cart` |
-| POST | `/api/cron/promos/update-status` |
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/cron/mail-queue` | **Preferred** alias (avoids Hostinger WAF false positives on `email`) |
+| GET | `/api/cron/process-email-queue` | Same handler as `mail-queue` |
+| GET | `/api/cron/retry-failed-emails` | |
+| GET | `/api/cron/reset-email-counts` | |
+| GET | `/api/cron/send-daily-digests` | |
+| GET | `/api/cron/send-weekly-digests` | |
+| GET | `/api/cron/send-scheduled-newsletters` | |
+| GET | `/api/cron/subscription-expiry` | |
+| GET | `/api/cron/order-feedback-requests` | |
+| GET | `/api/cron/superadmin-user-report` | |
+| GET | `/api/cron/superadmin-inactive-users` | |
+| GET | `/api/cron/qr-queue` | **Preferred** alias for QR flush |
+| GET | `/api/cron/process-qr-queue` | Same handler as `qr-queue` |
+| GET | `/api/cron/init-subscription-system` | |
+| GET | `/api/cron/cleanup-webhook-events` | |
+| GET | `/api/cron/cleanup-checkout-sessions` | |
+| GET | `/api/cron/cleanup-notifications` | |
+| GET | `/api/cron/cleanup` | |
+| GET | `/api/cron/company-daily-summary` | |
+| GET | `/api/cron/company-weekly-summary` | |
+| GET | `/api/cron/company-top-performer-alert` | |
+| GET | `/api/cron/trial-experience-followup` | |
+| GET | `/api/cron/bizcard-daily-report` | |
+| POST | `/api/cron/abandoned-cart` | POST only |
+| POST | `/api/cron/promos/update-status` | POST only |
 
 ## Hostinger notes
 
@@ -69,6 +73,17 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 - Point external schedulers at this domain’s `/api/cron/*` URLs.
 - Use small Prisma `connection_limit` values already baked into the DB clients (Hostinger-friendly).
 - Do **not** run Prisma migrations from this app; it only generates clients against existing schemas.
+
+### Troubleshooting `403 Forbidden` on cron-job.org
+
+This app’s cron auth returns **`401`** (JSON with `code: CRON_UNAUTHORIZED` or `CRON_UA_REJECTED`), never **`403`**.
+
+If cron-job.org shows **403**, the response is usually from **Hostinger ModSecurity / Imunify360**, not from `CRON_SECRET` mismatch:
+
+1. Prefer WAF-safe URLs: `/api/cron/mail-queue` and `/api/cron/qr-queue`.
+2. Confirm every job sends header `Authorization: Bearer <CRON_SECRET>` **and** (if set) a User-Agent containing `cron-job.org` when `CRON_ALLOWED_USER_AGENTS=cron-job.org`.
+3. In Hostinger → Security → open ModSecurity / Imunify logs for the blocked request; whitelist the path or disable the false-positive rule.
+4. Open the saved response body: HTML “Forbidden” = host WAF; JSON with `[CRON_AUTH]` = app auth (should be 401).
 
 ## Env
 

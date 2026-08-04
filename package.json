@@ -34,9 +34,13 @@
     "eslint-config-next": "16.2.12"
   },
   "overrides": {
-    "brace-expansion": "5.0.8",
+    "brace-expansion": "5.0.9",
     "postcss": "^8.5.18",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "fast-uri": "^3.1.5",
+    "hono": "^4.12.34",
+    "@hono/node-server": "^2.0.5",
+    "ip-address": "^10.3.1"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"

@@ -48,6 +48,7 @@ export function requireCronAuth(request: NextRequest): NextResponse | null {
         error: "Unauthorized.",
         code: "CRON_UNAUTHORIZED",
         tag: "[CRON_AUTH]",
+        hint: "Send Authorization: Bearer <CRON_SECRET> or x-cron-secret header. App auth failures are 401 (not 403).",
       },
       { status: 401 },
     );
@@ -68,6 +69,7 @@ export function requireCronAuth(request: NextRequest): NextResponse | null {
           error: "Unauthorized scheduler.",
           code: "CRON_UA_REJECTED",
           tag: "[CRON_AUTH]",
+          hint: `User-Agent must include one of: ${allowedAgents.join(", ")}. Clear CRON_ALLOWED_USER_AGENTS on the host if schedulers use a custom UA. App returns 401 for this case — HTML 403 is usually Hostinger/WAF.`,
         },
         { status: 401 },
       );
