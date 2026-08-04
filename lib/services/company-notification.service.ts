@@ -822,7 +822,7 @@ export class CompanyNotificationService {
               priority: "medium",
               title: `${company.name} daily summary`,
               message: "Your daily company activity summary is ready.",
-              actionUrl: "/company/dashboard",
+              actionUrl: "/admin/dashboard",
               actionText: "Open dashboard",
               templateName: "company-daily-summary",
               templateData: {
@@ -949,7 +949,7 @@ export class CompanyNotificationService {
               priority: "medium",
               title: `${company.name} weekly summary`,
               message: "Your weekly company activity summary is ready.",
-              actionUrl: "/company/dashboard",
+              actionUrl: "/admin/dashboard",
               actionText: "Open dashboard",
               templateName: "company-weekly-summary",
               templateData: {
@@ -1099,7 +1099,7 @@ export class CompanyNotificationService {
               priority: "high",
               title: `${company.name} top performer update`,
               message: `${topEmployee.name} is leading company profile views today.`,
-              actionUrl: "/company/dashboard/top-employee/today",
+              actionUrl: "/admin/dashboard",
               actionText: "View leaderboard",
               templateName: "company-top-performer",
               templateData: {

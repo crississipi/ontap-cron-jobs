@@ -262,16 +262,16 @@ export function buildNotificationContent(eventType: string, metadata: Record<str
       return {
         title: "New profile view",
         message: `${viewer} from ${biz} viewed your profile`,
-        action_url: "/insights/visitors",
-        action_text: "View Insights",
+        action_url: "/user/analytics",
+        action_text: "View Analytics",
       };
     }
     case "contact_download":
       return {
         title: "Contact downloaded",
         message: "Someone downloaded your contact information",
-        action_url: "/insights/contacts",
-        action_text: "View Contact Insights",
+        action_url: "/user/analytics",
+        action_text: "View Analytics",
       };
     case "friend_request_sent":
       return {
@@ -291,7 +291,7 @@ export function buildNotificationContent(eventType: string, metadata: Record<str
       return {
         title: "New inquiry",
         message: "You received a new message inquiry",
-        action_url: "/dashboard/inquiries",
+        action_url: "/user/inquiry",
         action_text: "Open Inquiry",
       };
     case "connection_added":
@@ -305,8 +305,8 @@ export function buildNotificationContent(eventType: string, metadata: Record<str
       return {
         title: "System update",
         message: "Platform update is available",
-        action_url: "/updates",
-        action_text: "Read Update",
+        action_url: "/user/dashboard",
+        action_text: "Open Dashboard",
       };
     case "subscription_expiring": {
       const kind = typeof metadata.kind === "string" ? metadata.kind : "";
@@ -384,8 +384,8 @@ export function buildNotificationContent(eventType: string, metadata: Record<str
       return {
         title: "New notification",
         message: "You have a new notification",
-        action_url: "/notifications",
-        action_text: "Open Notifications",
+        action_url: "/user/dashboard",
+        action_text: "Open Dashboard",
       };
   }
 }

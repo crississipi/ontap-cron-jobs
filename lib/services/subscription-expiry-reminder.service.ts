@@ -1,5 +1,5 @@
 import { prisma } from "@/server/lib/prisma";
-import { sendEmailMessage } from "@/server/lib/email";
+import { buildSubscriptionExpiryEmail, sendEmailMessage } from "@/server/lib/email";
 import { createNotificationFromEvent } from "@/server/lib/notifications";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,16 +29,6 @@ export type ReminderRunResult = {
   skippedNoEmail: number;
   errors: number;
 };
-
-function escapeHtml(str: string): string {
-  return str.replace(/[&<>"]/g, (m) => {
-    if (m === "&") return "&amp;";
-    if (m === "<") return "&lt;";
-    if (m === ">") return "&gt;";
-    if (m === '"') return "&quot;";
-    return m;
-  });
-}
 
 function getBaseUrl(): string {
   const explicit = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL;
@@ -349,48 +339,24 @@ async function collectExpiredTodayCandidates(now: Date): Promise<ReminderCandida
 
 async function sendReminderEmail(candidate: ReminderCandidate, message: string): Promise<boolean> {
   const renewUrl = `${getBaseUrl()}${RENEW_PATH}`;
-  const safeFirstName = escapeHtml(candidate.firstName || "there");
   const title = buildReminderTitle(candidate.kind);
-  const planLine =
-    candidate.bizcardName || candidate.planLabel
-      ? `<p>Plan: <strong>${escapeHtml(candidate.planLabel || "Subscription")}</strong>${
-          candidate.bizcardName ? ` (${escapeHtml(candidate.bizcardName)})` : ""
-        }</p>`
-      : "";
-
-  const html = `
-    <h2>${escapeHtml(title)}</h2>
-    <p>Hi ${safeFirstName},</p>
-    <p>${escapeHtml(message)}</p>
-    ${planLine}
-    <p>Expiry date: <strong>${escapeHtml(candidate.expiresAt.toLocaleDateString())}</strong></p>
-    <p><a href="${renewUrl}">Renew or subscribe now</a></p>
-    <p>Thank you,<br/>The Ontap Team</p>
-  `;
-
-  const text = `
-${title}
-
-Hi ${candidate.firstName || "there"},
-
-${message}
-
-${candidate.planLabel ? `Plan: ${candidate.planLabel}` : ""}
-${candidate.bizcardName ? `BizCard: ${candidate.bizcardName}` : ""}
-Expiry date: ${candidate.expiresAt.toLocaleDateString()}
-
-Renew or subscribe: ${renewUrl}
-
-Thank you,
-The Ontap Team
-  `.trim();
+  const rendered = buildSubscriptionExpiryEmail({
+    firstName: candidate.firstName || "there",
+    title,
+    message,
+    renewUrl,
+    expiresAt: candidate.expiresAt,
+    planLabel: candidate.planLabel,
+    bizcardName: candidate.bizcardName,
+    kind: candidate.kind,
+  });
 
   try {
     await sendEmailMessage({
       to: candidate.email,
-      subject: title,
-      html,
-      text,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
     });
     return true;
   } catch (error) {
